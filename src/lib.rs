@@ -243,7 +243,7 @@ impl Parser{
                         }
                         else
                         {
-                            return Err("invalid syntax Error");
+                            return Err("User Error:invalid syntax Error : depth");
                         }
                         depth += 1;
                     }
@@ -252,7 +252,7 @@ impl Parser{
                         depth -= 1;
                         if 0 < depth
                         {
-                            group.push(c);
+                            group.push(inner);
                         }
                         else if depth == 0
                         {
@@ -285,7 +285,22 @@ impl Parser{
                         }
                         else
                         {
-
+                            return Err("User Error:invalid syntax Error : depth");
+                        }
+                    }
+                    else
+                    {
+                        if depth > 0
+                        {
+                            group.push(inner);
+                        }
+                        else if  depth == 0
+                        {
+                            rlist.push(inner);
+                        }
+                        else
+                        {
+                            return Err("");
                         }
                     }
                 }
