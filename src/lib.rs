@@ -1,3 +1,5 @@
+use std::char::EscapeUnicode;
+
 
 struct OpePair(&str, i32);
 
@@ -56,10 +58,9 @@ struct Parser {
     primitive_object_type: Vec<&str>,
 
     
-    escape_string:char,
+    escape_char:char,
     semicolon:char,
     function_string:String,
-
 }
 
 impl Parser{
@@ -147,14 +148,182 @@ impl Parser{
             split_char : split_char,
             char_exclude : char_exclude,
 
-            escape_string   : '\\',
+            escape_char   : '\\',
             function_string : String::from("fn"),
             semicolon : ';',
         };
+
     }
 
-	
+    fn grouping_quotation(&self, code:Vec<Elem>, quo_char:char) -> Result<Vec<Elem>,&str>{
+        let mut open_flag = false;
+        let mut escape_flag = false;
+        let mut rlist:Vec<Elem> = Vec::new();
+        let mut group:String = Vec::new();
+        for inner in code{
+            if escape_flag{
+                group.push(inner);
+                escape_flag = false
+            }else{
+                match inner{
+                    Elem::UNKNOWN(c) => {
+                        if c == quo_char
+                        {
+                            if open_flag
+                            {
+                                group.push(c);
+                                rlist.push(
+                                    Elem::ElemString(
+                                        StructString{
+                                            contents:group
+                                        }
+                                    )
+                                );
+                                group.clear();
+                                open_flag = false;
+                            }
+                            else
+                            {
+                                group.append(c);
+                                open_flag = true;
+                            }
+                        }
+                        else
+                        {
+                            if open_flag
+                            {
+                                if c == self.escape_char
+                                {
+                                    escape_flag = true;
+                                }
+                                else
+                                {
+                                    escape_flag = false;
+                                }
+                                group.push(c);
+                            }
+                            else
+                            {
+                                rlist.push(inner);
+                            }
+                        }
+                    }
+                    _ =>{
+                        rlist.push(inner); 
+                    }
+                }
+            }
+        }
+        //error check proc
+        if open_flag
+        {
+            return Err("you must close quotation");
+        }
+        return Ok(rlist);
+    }
+
+	fn grouping_elements(&self, code:Vec<Elem>, open_char:char, close_char:char,object_instance:Elem) -> Result<Vec<Elem>,&str>{
+        let mut rlist:Vec<Elem> = Vec::new();
+        let mut group:Vec<Elem> = Vec::new();
+        let mut depth:i32 = 0;
+
+        for inner in code{
+            match inner
+            {
+                Elem::UNKNOWN(c ) => {
+                    if c == open_char
+                    {
+                        if 0 < depth
+                        {
+                            group.push(Elem::UNKNOWN(c));
+                        }
+                        else if depth == 0
+                        {
+                            //pass
+                        }
+                        else
+                        {
+                            return Err("invalid syntax Error");
+                        }
+                        depth += 1;
+                    }
+                    else if c == close_char
+                    {
+                        depth -= 1;
+                        if 0 < depth
+                        {
+                            group.push(c);
+                        }
+                        else if depth == 0
+                        {
+                            match object_instance
+                            {
+                                Elem::ElemBlock =>
+                                {
+                                    rlist.push(Elem::ElemBlock(StructBlock{
+                                        contents:group
+                                    }));
+                                }
+                                Elem::ElemParenBlock =>
+                                {
+                                    rlist.push(Elem::ElemParenBlock(StructParenBlock{
+                                        contents:group
+                                    }));
+                                }
+                                Elem::ElemListBlock =>
+                                {
+                                    rlist.push(Elem::ElemListBlock(StructListBlock {
+                                        contents: group
+                                    }));
+                                }
+                                _ => 
+                                {
+                                    return Err("invalid object instance");
+                                }
+                            }
+                            group.clear();
+                        }
+                        else
+                        {
+
+                        }
+                    }
+                }
+                _=>{
+                    rlist.push(inner); 
+                }
+            }
+        }
+        return Ok(rlist);
+    }
 }
+
+enum Elem{
+    // unknown
+    UNKNOWN(char),
+    // 決定
+    ElemBlock(StructBlock),
+    ElemString(StructString),
+    ElemListBlock(StructListBlock),
+    ElemParenBlock(StructParenBlock),
+}
+
+struct StructBlock{
+    contents:Vec<Elem>
+}
+
+struct StructParenBlock{
+    contents:Vec<Elem>
+}
+
+struct StructListBlock{
+    contents:Vec<Elem>
+}
+
+struct StructString{
+    contents:String
+}
+
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right
