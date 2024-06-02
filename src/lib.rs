@@ -566,13 +566,14 @@ impl Parser{
                             }
                             else
                             {
-                                rlist.push(name_tmp);
+                                rlist.push(e);
                                 rlist.push(inner);
                                 name_tmp = None;
                             }
                         }
                         None => {
-                            
+                            // ここの処理は後で考える
+                            todo!()
                         }
                     }
                 }
@@ -610,6 +611,11 @@ impl Parser{
             }
         }
         return Ok(rlist);
+    }
+
+    fn code2vec(&self,code:Vec<Elem>) -> Vec<Elem>
+    {
+        todo!();   
     }
 }
 
