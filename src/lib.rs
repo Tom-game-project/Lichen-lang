@@ -523,6 +523,94 @@ impl Parser{
         }
         return Ok(rlist);
     }
+
+    fn grouping_functioncall(&self, code:Vec<Elem>) -> Result<Vec<Elem>,&str>{
+        let mut flag = false;
+        let mut name_tmp:Option<StructWord> = None;
+        let mut rlist:Vec<Elem> = Vec::new();
+
+        for inner in code{
+            match inner{
+                Elem::ElemWord(w) => {
+                    if flag
+                    {
+                        match name_tmp{
+                            Some(e)=>{
+                                rlist.push(name_tmp);
+                            }
+                            None=>{
+                                return Err("Dev Error : grouping_functioncall");
+                            }
+                        }
+                    }
+                    name_tmp = Some(inner);
+                    flag = true;
+                }
+                Elem::ElemBlock(b) => {
+                    match name_tmp {
+                        Some(e) => {
+                            if flag && self.control_statement.contains(e.contents)
+                            {
+                                rlist.push(
+                                    Elem::ElemFunc(
+                                        StructFunc {
+                                            name: e, 
+                                            contents: b.contents, 
+                                            depth: self.depth, 
+                                            loopdepth: self.loopdepth
+                                        }
+                                    )
+                                );
+                                name_tmp = None;
+                                flag = false;
+                            }
+                            else
+                            {
+                                rlist.push(name_tmp);
+                                rlist.push(inner);
+                                name_tmp = None;
+                            }
+                        }
+                        None => {
+                            
+                        }
+                    }
+                }
+                _ => {
+                    if flag
+                    {
+                        match name_tmp{
+                            Some(e) => {
+                                rlist.push(e);
+                            }
+                            None => {
+                                // pass
+                            }
+                        }
+                        rlist.push(inner);
+                        flag = false;
+                        name_tmp = None;
+                    }
+                    else
+                    {
+                        rlist.push(inner);
+                    }
+                }
+            }
+        }
+        if flag
+        {
+            match name_tmp{
+                Some(e) =>{
+                    rlist.push(e);
+                }
+                None => {
+                    // pass
+                }
+            }
+        }
+        return Ok(rlist);
+    }
 }
 
 enum Elem{
@@ -535,6 +623,7 @@ enum Elem{
     ElemParenBlock(StructParenBlock),
     ElemWord(StructWord),
     ElemSyntax(StructSyntax),
+    ElemFunc(StructFunc),
 }
 
 struct StructBlock{
@@ -569,6 +658,14 @@ struct StructSyntax{
     depth: i32,
     loopdepth:i32,
 }
+
+struct StructFunc {
+    name    :String,
+    contents:Vec<Elem>,
+    depth:i32,
+    loopdepth:i32,
+}
+
 pub fn add(left: usize, right: usize) -> usize {
     left + right
 }
