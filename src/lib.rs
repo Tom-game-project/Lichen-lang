@@ -34,6 +34,14 @@ impl  OpePairList{
             println!("index:{}, ope:{}, priority{}",i, j.0, j.1);
         }
     }
+
+    fn keys(&self) -> Vec<String>{
+        let mut rlist = Vec::new();
+        for i in self.data{
+            rlist.push(i.0.to_string());
+        }
+        return (rlist);
+    }
 }
 
 struct Parser {
@@ -311,6 +319,81 @@ impl Parser{
         }
         return Ok(rlist);
     }
+
+    fn grouping_words(&self,code:Vec<Elem>, split:Vec<char>, excludes:Vec<String>) -> Result<Vec<Elem>, &str>{
+        let mut rlist :Vec<Elem>= Vec::new();
+        let mut group :String = String::new();
+        let mut ope_chars:String =  self.left_priority_list.keys() + self.right_priority_list.keys() + excludes;
+        for inner in code{
+            match inner{
+                Elem::UNKNOWN(c) => {
+                    if split.contains(&c)
+                    {
+                        if !group.is_empty()
+                        {
+                            rlist.push(
+                                Elem::ElemWord(
+                                    StructWord {
+                                        contents: group.join(""),
+                                        depth:self.depth
+                                    }
+                                )
+                            );
+                            group.clear();
+                        }
+                    }
+                    else if ope_chars.contains(&c)
+                    {
+                        if !group.is_empty()
+                        {
+                            rlist.push(
+                                Elem::ElemWord(
+                                    StructWord {
+                                        contents: group.join(""),
+                                        depth:self.depth
+                                    }
+                                )
+                            );
+                            group.clear();
+                        }
+                        rlist.push(inner);
+                    }
+                    else
+                    {
+                        group.push(c);
+                    }
+                }
+                _ => {
+                    // 既に role 決定済み
+                    if !group.is_empty()
+                    {
+                        rlist.push(
+                            Elem::ElemWord(
+                                StructWord {
+                                    contents: group.join(""),
+                                    depth:self.depth
+                                }
+                            )
+                        );
+                        group.clear();
+                    }
+                    rlist.push(inner);
+                }
+            }
+        }
+        if !group.is_empty()
+        {
+            rlist.push(
+                Elem::ElemWord(
+                    StructWord {
+                        contents: group.join(""),
+                        depth:self.depth
+                    }
+                ));
+            group.clear();
+        }
+        return Ok(rlist);
+    }
 }
 
 enum Elem{
@@ -321,6 +404,7 @@ enum Elem{
     ElemString(StructString),
     ElemListBlock(StructListBlock),
     ElemParenBlock(StructParenBlock),
+    ElemWord(StructWord),
 }
 
 struct StructBlock{
@@ -339,6 +423,10 @@ struct StructString{
     contents:String
 }
 
+struct StructWord{
+    contents:String,
+    depth:i32
+}
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right
