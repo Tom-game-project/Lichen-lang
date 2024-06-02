@@ -168,6 +168,7 @@ impl Parser{
         let mut escape_flag = false;
         let mut rlist:Vec<Elem> = Vec::new();
         let mut group:String = Vec::new();
+
         for inner in code{
             if escape_flag{
                 group.push(inner);
@@ -269,13 +270,17 @@ impl Parser{
                                 Elem::ElemBlock =>
                                 {
                                     rlist.push(Elem::ElemBlock(StructBlock{
-                                        contents:group
+                                        contents:group,
+                                        depth:self.depth,
+                                        loopdepth:self.loopdepth
                                     }));
                                 }
                                 Elem::ElemParenBlock =>
                                 {
                                     rlist.push(Elem::ElemParenBlock(StructParenBlock{
-                                        contents:group
+                                        contents:group,
+                                        depth:self.depth,
+                                        loopdepth:self.loopdepth
                                     }));
                                 }
                                 Elem::ElemListBlock =>
@@ -320,10 +325,11 @@ impl Parser{
         return Ok(rlist);
     }
 
-    fn grouping_words(&self,code:Vec<Elem>, split:Vec<char>, excludes:Vec<String>) -> Result<Vec<Elem>, &str>{
+    fn grouping_words(&self, code:Vec<Elem>, split:Vec<char>, excludes:Vec<String>) -> Result<Vec<Elem>, &str>{
         let mut rlist :Vec<Elem>= Vec::new();
         let mut group :String = String::new();
         let mut ope_chars:String =  self.left_priority_list.keys() + self.right_priority_list.keys() + excludes;
+
         for inner in code{
             match inner{
                 Elem::UNKNOWN(c) => {
@@ -394,6 +400,129 @@ impl Parser{
         }
         return Ok(rlist);
     }
+
+    fn grouping_syntax(&self, code:Vec<Elem>, syntax_words:Vec<String>) -> Result<Vec<Elem>,&str>{
+        let mut flag = false;
+        let mut rlist :Vec<Elem> = Vec::new();
+        let mut group :Vec<Elem> = Vec::new();
+
+        for inner in code{
+            match inner {
+                Elem::ElemWord(w) => {
+                    if syntax_words.contains(&w.contents) 
+                    {
+                        group.push(inner);
+                        flag = true;
+                    }
+                    else
+                    {
+                        rlist.push(inner);
+                    }
+                }
+                Elem::ElemParenBlock(_) => {
+                    if flag
+                    {
+                        group.push(inner);
+                    }
+                    else {
+                        rlist.push(inner);
+                    }
+                }
+                Elem::ElemBlock(b) => {
+                    if flag
+                    {
+                        group.push(inner);
+                        if group.len() == 2
+                        {
+                            let name:String;
+                            let block:Vec<Elem>;
+                            match group[0]{
+                                Elem::ElemWord(w) => {
+                                    name = w.contents;
+                                }
+                                _=>{
+                                    return Err("Dev Error: grouping_syntax");
+                                }
+                            }
+                            match group[1]{
+                                Elem::ElemBlock(b)=>{
+                                    block = b.contents;
+                                }
+                                _ => {
+                                    return Err("Dev Error : grouping_syntax");
+                                }
+                            }
+                            let block:Elem::ElemBlock = group[1];
+                            rlist.push(Elem::ElemSyntax(
+                                StructSyntax{
+                                    name:name,
+                                    expr:None,
+                                    contents:block,
+                                    depth:self.depth,
+                                    loopdepth:self.loopdepth
+                                }
+                            ));
+                        }
+                        else if group.len() == 3
+                        {
+                            let syntax_name: String;
+                            let paren:Vec<Elem>;
+                            let block:Vec<Elem>;
+                            match group[0]{
+                                Elem::ElemWord(w) => {
+                                    syntax_name = w.contents;
+                                }
+                                _ => {
+                                    return Err("Dev Error : grouping_syntax");
+                                }
+                            }
+                            match group[2]{
+                                Elem::ElemParenBlock(p) => {
+                                    paren = p.contents;
+                                }
+                                _ => {
+                                    return Err("Dev Error : grouping_syntax");
+                                }
+                            }
+                            match group[2]{
+                                Elem::ElemBlock(b) => {
+                                    block = b.contents;
+                                }
+                                _ => {
+                                    return Err("Dev Error : grouping_syntax");
+                                }
+                            }
+                            rlist.push( 
+                                Elem::ElemSyntax(
+                                    StructSyntax {
+                                        name: syntax_name,
+                                        expr: Some(paren),
+                                        contents: block,
+                                        depth: self.depth,
+                                        loopdepth: self.loopdepth,
+                                    }
+                                )
+                            );
+                        }
+                        else
+                        {
+                            return Err("Dev error : grouping_syntax");
+                        }
+                        group.clear();
+                        flag = false;
+                    }
+                    else
+                    {
+                        rlist.push(inner);
+                    }
+                }
+                _ => {
+                    rlist.push(inner);
+                }
+            }
+        }
+        return Ok(rlist);
+    }
 }
 
 enum Elem{
@@ -405,14 +534,19 @@ enum Elem{
     ElemListBlock(StructListBlock),
     ElemParenBlock(StructParenBlock),
     ElemWord(StructWord),
+    ElemSyntax(StructSyntax),
 }
 
 struct StructBlock{
-    contents:Vec<Elem>
+    contents:Vec<Elem>,
+    depth: i32,
+    loopdepth:i32
 }
 
 struct StructParenBlock{
-    contents:Vec<Elem>
+    contents:Vec<Elem>,
+    depth: i32,
+    loopdepth: i32,
 }
 
 struct StructListBlock{
@@ -428,6 +562,13 @@ struct StructWord{
     depth:i32
 }
 
+struct StructSyntax{
+    name:String,
+    contents:Vec<Elem>,
+    expr:Option<Vec<Elem>>,
+    depth: i32,
+    loopdepth:i32,
+}
 pub fn add(left: usize, right: usize) -> usize {
     left + right
 }
