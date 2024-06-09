@@ -1,18 +1,52 @@
+
 enum BaseElem{
     BlockElem(BlockBranch),
     UnKnownElem(UnKnownBranch)
 }
+
+impl BaseElem{
+    fn show(&self) {
+        match self{
+            BaseElem::BlockElem(e) => {
+                e.show();
+            }
+            BaseElem::UnKnownElem(e) => {
+                e.show();
+            }
+        }
+    }
+}
+
+trait ASTBranch{
+    fn show(&self);
+}
+
 
 struct BlockBranch{
     undec_contents: Option<String>,
     contents: Option<Box<BaseElem>>
 }
 
+impl ASTBranch for BlockBranch{
+    fn show(&self){
+        match &self.undec_contents{
+            Some(e) => {
+                println!("undec_contents :{}", e);
+            }
+            None=>{}
+        }
+    }
+}
+
 struct UnKnownBranch{
     contents: char
 }
 
-
+impl ASTBranch for UnKnownBranch{
+    fn show(&self){
+        println!("{}", self.contents);
+    }
+}
 struct Parser{
     code:String
 }
@@ -31,8 +65,10 @@ impl Parser{
 
     fn code2_vec_pre_proc_func(&self, code:&String) -> Vec<BaseElem>{
         let mut rlist :Vec<BaseElem>= Vec::new();
-        code.chars().map(|c|BaseElem::UnKnownElem(UnKnownBranch{contents: c}));
-        return rlist;
+        return code
+                    .chars()
+                    .map(|c|BaseElem::UnKnownElem(UnKnownBranch{contents: c}))
+                    .collect();
     }
 
     fn grouping_block(&self,codelist: Vec<BaseElem>) -> Result<Vec<BaseElem>,&str>{
@@ -120,7 +156,11 @@ mod tests {
 
         let rlst = parser.grouping_block(
             parser.code2_vec_pre_proc_func(&parser.code)
-        );
+        ).unwrap();
+
+        for i in rlst{
+            i.show();
+        }
         //println!("{:?}",rlst);
         assert_eq!(2 + 2, 4);
     }
