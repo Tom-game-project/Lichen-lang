@@ -12,10 +12,12 @@ impl BaseElem
     {
         match self
         {
-            BaseElem::BlockElem(e) => {
+            BaseElem::BlockElem(e) =>
+            {
                 e.show();
             }
-            BaseElem::UnKnownElem(e) => {
+            BaseElem::UnKnownElem(e) =>
+            {
                 e.show();
             }
         }
@@ -40,10 +42,11 @@ impl ASTBranch for BlockBranch
     {
         match &self.undec_contents
         {
-            Some(e) => {
+            Some(e) => 
+            {
                 println!("undec_contents :{}", e);
             }
-            None => {}
+            None => {/* pass */}
         }
     }
 }
@@ -55,7 +58,8 @@ pub struct UnKnownBranch
 
 impl ASTBranch for UnKnownBranch
 {
-    fn show(&self){
+    fn show(&self)
+    {
         println!("{}", self.contents);
     }
 }
@@ -69,7 +73,8 @@ impl Parser
 {
     pub fn new(code:String) -> Self
     {
-        Self {
+        Self
+        {
             code: code
         }
     }
@@ -125,8 +130,10 @@ impl Parser
                         else if depth == 0
                         {
                             rlist.push(
-                                BaseElem::BlockElem(
-                                    BlockBranch{
+                                BaseElem::BlockElem
+                                (
+                                    BlockBranch
+                                    {
                                         undec_contents: Some(group.clone()),
                                         contents:None
                                     }
