@@ -1,5 +1,5 @@
 
-
+#[derive(Clone)]
 pub enum BaseElem
 {
     BlockElem(BlockBranch),
@@ -29,28 +29,33 @@ pub trait ASTBranch
     fn show(&self);
 }
 
-
+#[derive(Clone)]
 pub struct BlockBranch
 {
-    undec_contents: Option<String>,
-    contents: Option<Box<BaseElem>>
+    contents: Option<Vec<BaseElem>>
 }
 
 impl ASTBranch for BlockBranch
 {
     fn show(&self)
     {
-        match &self.undec_contents
+        println!("BlockBranch (");
+        match &self.contents
         {
             Some(e) => 
             {
-                println!("undec_contents :{}", e);
+                for i in e
+                {
+                    i.show();
+                }
             }
             None => {/* pass */}
         }
+        println!(")");
     }
 }
 
+#[derive(Clone)]
 pub struct UnKnownBranch
 {
     contents: char
@@ -60,7 +65,7 @@ impl ASTBranch for UnKnownBranch
 {
     fn show(&self)
     {
-        println!("{}", self.contents);
+        println!("UnKnownBranch :\"{}\"", self.contents);
     }
 }
 pub struct Parser
@@ -79,15 +84,25 @@ impl Parser
         }
     }
 
-    pub fn code2vec(&self,code: &str) -> Vec<BaseElem>
+    pub fn resolve(&mut self)
     {
-        todo!();
+        todo!()
+    }
+
+    pub fn code2vec(&self,code: String) -> Result<Vec<BaseElem>,&str>
+    {
+        let mut code_list;
+        code_list = self.code2_vec_pre_proc_func(&code);
+        match self.grouping_block(code_list){
+            Ok(r) => code_list = r,
+            Err(e) => return Err(e)
+        }
+        return Ok(code_list);
     }
 
 
     pub fn code2_vec_pre_proc_func(&self, code:&String) -> Vec<BaseElem>
     {
-        let mut rlist :Vec<BaseElem>= Vec::new();
         return code
                     .chars()
                     .map(|c|BaseElem::UnKnownElem(UnKnownBranch{contents: c}))
@@ -96,7 +111,7 @@ impl Parser
 
     pub fn grouping_block(&self,codelist: Vec<BaseElem>) -> Result<Vec<BaseElem>,&str>{
         let mut rlist:Vec<BaseElem> = Vec::new();
-        let mut group:String = String::new();
+        let mut group:Vec<BaseElem> = Vec::new();
         let mut depth:isize = 0;
 
         for inner in codelist
@@ -108,7 +123,7 @@ impl Parser
                     {
                         if depth > 0
                         {
-                            group.push(b.contents);
+                            group.push(BaseElem::UnKnownElem(b));
                         }
                         else if depth == 0
                         {
@@ -125,7 +140,7 @@ impl Parser
                         depth -= 1;
                         if depth > 0
                         {
-                            group.push(b.contents);
+                            group.push(BaseElem::UnKnownElem(b));
                         }
                         else if depth == 0
                         {
@@ -134,8 +149,8 @@ impl Parser
                                 (
                                     BlockBranch
                                     {
-                                        undec_contents: Some(group.clone()),
-                                        contents:None
+                                        //undec_contents: None,
+                                        contents:Some(group.clone())
                                     }
                                 )
                             );
@@ -150,7 +165,7 @@ impl Parser
                     {
                         if depth > 0
                         {
-                            group.push(b.contents);
+                            group.push(BaseElem::UnKnownElem(b));
                         }
                         else if depth == 0
                         {
