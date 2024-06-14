@@ -105,7 +105,11 @@ impl ASTBranch for BlockBranch
                     Ok(v) => {
                         let mut rlist = v.to_vec();
                         for i in &mut rlist{
-                            i.resolve_self();
+                            match i.resolve_self()
+                            {
+                                Ok(_) => {/* pass */},
+                                Err(_) => {/* pass */}
+                            };
                         }
                         self.contents = Some(rlist);
                         return Ok("OK!");
@@ -125,7 +129,7 @@ impl ASTBranch for BlockBranch
 
 
 #[derive(Clone)]
-struct StringBranch
+pub struct StringBranch
 {
     contents: String
 }
@@ -187,7 +191,13 @@ impl Parser
             {
                 for i in &mut v
                 {
-                    i.resolve_self();
+                    match i.resolve_self()
+                    {
+                        Ok(_) => {/* pass */}
+                        //Err(e) => return Err(e)
+                        Err(_) => {/* pass */}
+                    }
+                    
                 }
                 return Ok(v);
             }
@@ -238,45 +248,53 @@ impl Parser
             {
                 BaseElem::UnKnownElem(ref v)=>
                 {
-                    if v.contents == '"' // is quochar 
+                    if escape_flag
                     {
-                        if open_flag
-                        {
-                            group.push(v.contents);
-                            rlist.push(
-                                BaseElem::StringElem(
-                                    StringBranch
-                                    {
-                                        contents: group.clone()
-                                    }
-                                )
-                            );
-                            group.clear();
-                            open_flag = false;
-                        }
-                        else
-                        {
-                            group.push(v.contents);
-                            open_flag = true;
-                        }
+                        group.push(v.contents);
+                        escape_flag = false
                     }
                     else
                     {
-                        if open_flag
+                        if v.contents == '"' // is quochar 
                         {
-                            if v.contents == '\\'
+                            if open_flag
                             {
-                                escape_flag = true;
+                                group.push(v.contents);
+                                rlist.push(
+                                    BaseElem::StringElem(
+                                        StringBranch
+                                        {
+                                            contents: group.clone()
+                                        }
+                                    )
+                                );
+                                group.clear();
+                                open_flag = false;
                             }
                             else
                             {
-                                escape_flag = false;
+                                group.push(v.contents);
+                                open_flag = true;
                             }
-                            group.push(v.contents);
                         }
                         else
                         {
-                            rlist.push(inner);    
+                            if open_flag
+                            {
+                                if v.contents == '\\'
+                                {
+                                    escape_flag = true;
+                                }
+                                else
+                                {
+                                    escape_flag = false;
+                                }
+                                group.push(v.contents);
+                            }
+                            else
+                            {
+                                rlist.push(inner);    
+                            }
                         }
                     }
                 }
