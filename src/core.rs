@@ -22,6 +22,31 @@ impl BaseElem
             }
         }
     }
+    pub fn resolve_self(&mut self) -> Result<&str,String>
+    {
+        match self
+        {
+            BaseElem::BlockElem(e) => 
+            {
+                match e.resolve_self()
+                {
+                    Ok(_) =>
+                    {
+                        return Ok("Ok")
+                    }
+                    Err(e) =>
+                    {
+                        return Err(e);
+                    }
+                }
+            }
+            BaseElem::UnKnownElem(_) =>
+            {
+                // pass
+                return  Ok("Ok");
+            }
+        }
+    }
 }
 
 pub trait ASTBranch
@@ -55,6 +80,33 @@ impl ASTBranch for BlockBranch
     }
 }
 
+impl BlockBranch {
+    pub fn resolve_self(&mut self) -> Result<&str,String>{
+        match &self.contents {
+            Some(a) => {
+                let parser = Parser::new(String::from(""));
+                match parser.code2vec(&a) {
+                    Ok(v) => {
+                        let mut rlist = v.to_vec();
+                        for i in &mut rlist{
+                            i.resolve_self();
+                        }
+                        self.contents = Some(rlist);
+                        return Ok("OK!");
+                    }
+                    Err(e) => {
+                        // println!("{}",e);
+                        return Err(String::from(e));
+                    }
+                }
+            } 
+            None => {
+                return Ok("Empty");
+            }
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct UnKnownBranch
 {
@@ -84,16 +136,31 @@ impl Parser
         }
     }
 
-    pub fn resolve(&mut self)
+    pub fn resolve(&self) -> Result<Vec<BaseElem>,String>
     {
-        todo!()
+        let code_list = self.code2_vec_pre_proc_func(&self.code);
+        let mut code_list = self.code2vec(&code_list);
+        match code_list{
+            Ok(mut v) => 
+            {
+                for i in &mut v
+                {
+                    i.resolve_self();
+                }
+                return Ok(v);
+            }
+            Err(e) => 
+            {
+                return Err(String::from(e));
+            }
+        }
     }
 
-    pub fn code2vec(&self,code: String) -> Result<Vec<BaseElem>,&str>
+    pub fn code2vec(&self,code: &Vec<BaseElem>) -> Result<Vec<BaseElem>,&str>
     {
         let mut code_list;
-        code_list = self.code2_vec_pre_proc_func(&code);
-        match self.grouping_block(code_list){
+        //code_list = self.code2_vec_pre_proc_func(&code);
+        match self.grouping_block(code.to_vec()){
             Ok(r) => code_list = r,
             Err(e) => return Err(e)
         }

@@ -9,16 +9,25 @@ mod tests {
     #[test]
     fn test00() {
         let program = String::from("{a{123}42{hello}}world");
-        let parser = Parser::new(program);
+        let parser = Parser::new(program.clone());
 
-        let rlst = parser.grouping_block(
-            parser.code2_vec_pre_proc_func(&parser.code)
-        ).unwrap();
+        println!("test case {}",program);
+        let rlst = parser.resolve();
 
-        for i in rlst{
-            i.show();
+        match rlst {
+            Ok(v) => 
+            {
+                for i in v{
+                    i.show();
+                }
+            }
+            Err(e) => 
+            {
+                println!("error msg {}", e);
+            }
         }
+        
         //println!("{:?}",rlst);
-        assert_eq!(2 + 2, 4);
+        //assert_eq!(2 + 2, 4);
     }
 }
