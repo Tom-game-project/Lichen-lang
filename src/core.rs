@@ -3,7 +3,8 @@
 pub enum BaseElem
 {
     BlockElem(BlockBranch),
-    UnKnownElem(UnKnownBranch)
+    StringElem(StringBranch),
+    UnKnownElem(UnKnownBranch),
 }
 
 impl BaseElem
@@ -17,6 +18,10 @@ impl BaseElem
                 e.show();
             }
             BaseElem::UnKnownElem(e) =>
+            {
+                e.show();
+            }
+            BaseElem::StringElem(e) => 
             {
                 e.show();
             }
@@ -41,9 +46,16 @@ impl BaseElem
                     }
                 }
             }
+
+            // not recursive elements 
+            BaseElem::StringElem(_) => 
+            {
+                return Ok("Ok");
+            }
             BaseElem::UnKnownElem(_) =>
             {
                 // pass
+                // or return _.resolve_self()
                 return  Ok("Ok");
             }
         }
@@ -53,6 +65,7 @@ impl BaseElem
 pub trait ASTBranch
 {
     fn show(&self);
+    fn resolve_self(&mut self) -> Result<&str,String>;
 }
 
 #[derive(Clone)]
@@ -80,10 +93,8 @@ impl ASTBranch for BlockBranch
         }
         println!(")");
     }
-}
 
-impl BlockBranch {
-    pub fn resolve_self(&mut self) -> Result<&str,String>{
+    fn resolve_self(&mut self) -> Result<&str,String>{
         match &self.contents {
             Some(a) => {
                 let parser = Parser::new(
@@ -112,6 +123,24 @@ impl BlockBranch {
     }
 }
 
+
+#[derive(Clone)]
+struct StringBranch
+{
+    contents: String
+}
+
+impl ASTBranch for StringBranch
+{
+    fn show(&self) {
+        println!("String \"{}\"",self.contents);
+    }
+
+    fn resolve_self(&mut self) -> Result<&str,String> {
+        return Ok("Ok");
+    }
+}
+
 #[derive(Clone)]
 pub struct UnKnownBranch
 {
@@ -124,7 +153,12 @@ impl ASTBranch for UnKnownBranch
     {
         println!("UnKnownBranch :\"{}\"", self.contents);
     }
+    fn resolve_self(&mut self) -> Result<&str,String> {
+        return Ok("Ok!");
+    }
 }
+
+
 pub struct Parser
 {
     // TODO: 一時的にpublicにしているだけ
@@ -132,6 +166,7 @@ pub struct Parser
     pub depth:isize
 }
 
+/// # Parser
 impl Parser
 {
     pub fn new(code:String,depth:isize) -> Self
@@ -165,9 +200,15 @@ impl Parser
 
     fn code2vec(&self,code: &Vec<BaseElem>) -> Result<Vec<BaseElem>,&str>
     {
-        let code_list;
+        let mut code_list;
         //code_list = self.code2_vec_pre_proc_func(&code);
-        match self.grouping_block(code.to_vec()){
+        match self.grouping_quotation(code.to_vec())
+        {
+            Ok(r) => code_list = r,
+            Err(e) => return Err(e)
+        }
+        match self.grouping_block(code_list)
+        {
             Ok(r) => code_list = r,
             Err(e) => return Err(e)
         }
@@ -183,6 +224,76 @@ impl Parser
                     .collect();
     }
 
+
+    fn grouping_quotation(&self, codelist: Vec<BaseElem>) -> Result<Vec<BaseElem>,&str>
+    {
+        let mut open_flag = false;
+        let mut escape_flag = false;
+        let mut rlist = Vec::new();
+        let mut group = String::new();
+
+        for inner in codelist
+        {
+            match inner
+            {
+                BaseElem::UnKnownElem(ref v)=>
+                {
+                    if v.contents == '"' // is quochar 
+                    {
+                        if open_flag
+                        {
+                            group.push(v.contents);
+                            rlist.push(
+                                BaseElem::StringElem(
+                                    StringBranch
+                                    {
+                                        contents: group.clone()
+                                    }
+                                )
+                            );
+                            group.clear();
+                            open_flag = false;
+                        }
+                        else
+                        {
+                            group.push(v.contents);
+                            open_flag = true;
+                        }
+                    }
+                    else
+                    {
+                        if open_flag
+                        {
+                            if v.contents == '\\'
+                            {
+                                escape_flag = true;
+                            }
+                            else
+                            {
+                                escape_flag = false;
+                            }
+                            group.push(v.contents);
+                        }
+                        else
+                        {
+                            rlist.push(inner);    
+                        }
+                    }
+                }
+                BaseElem::StringElem(v) => 
+                {
+                    // error
+                    return Err("[Error:]Unreacable");
+                }
+                BaseElem::BlockElem(v) =>
+                {
+                    return Err("[Error:]Unreacable");
+                }
+            }
+        }
+        return Ok(rlist);
+    }
+
     fn grouping_block(&self,codelist: Vec<BaseElem>) -> Result<Vec<BaseElem>,&str>{
         let mut rlist:Vec<BaseElem> = Vec::new();
         let mut group:Vec<BaseElem> = Vec::new();
@@ -192,12 +303,12 @@ impl Parser
         {
             match inner
             {
-                BaseElem::UnKnownElem(b) => {
+                BaseElem::UnKnownElem(ref b) => {
                     if b.contents == '{'
                     {
                         if depth > 0
                         {
-                            group.push(BaseElem::UnKnownElem(b));
+                            group.push(inner);
                         }
                         else if depth == 0
                         {
@@ -205,7 +316,7 @@ impl Parser
                         }
                         else
                         {
-                            return Err("Error!");
+                            return Err("[Error:]");
                         }
                         depth += 1;
                     }
@@ -214,7 +325,7 @@ impl Parser
                         depth -= 1;
                         if depth > 0
                         {
-                            group.push(BaseElem::UnKnownElem(b));
+                            group.push(inner);
                         }
                         else if depth == 0
                         {
@@ -233,27 +344,42 @@ impl Parser
                         }
                         else
                         {
-                            return Err("Error!");
+                            return Err("[Error:]");
                         }
                     }
                     else
                     {
                         if depth > 0
                         {
-                            group.push(BaseElem::UnKnownElem(b));
+                            group.push(inner);
                         }
                         else if depth == 0
                         {
-                            rlist.push(BaseElem::UnKnownElem(b));
+                            rlist.push(inner);
                         }
                         else
                         {
-                            return Err("Error!");
+                            return Err("[Error:]");
                         }
+                    }
+                }
+                BaseElem::StringElem(_)=> {
+                    if depth > 0
+                    {
+                        group.push(inner);
+                    }
+                    else if depth == 0
+                    {
+                        rlist.push(inner);
+                    }
+                    else
+                    {
+                        return Err("[Error:]");
                     }
                 }
                 BaseElem::BlockElem(_) => {
                     // pass
+                    return Err("[Error:]");
                 }
             }
         }

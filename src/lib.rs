@@ -8,7 +8,7 @@ mod tests {
 
     #[test]
     fn test00() {
-        let program = String::from("{a{123}42{hello}}world");
+        let program = String::from("{a{123}\"42\"{hello}}world");
         let parser = Parser::new(
             program.clone(),
             0
