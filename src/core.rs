@@ -280,14 +280,16 @@ impl Parser
                         }
                     }
                 }
-                BaseElem::StringElem(v) => 
+                BaseElem::StringElem(_) => 
                 {
                     // error
-                    return Err("[Error:]Unreacable");
+                    //return Err("[Error:]Unreacable");
+                    rlist.push(inner);
                 }
-                BaseElem::BlockElem(v) =>
+                BaseElem::BlockElem(_) =>
                 {
-                    return Err("[Error:]Unreacable");
+                    //return Err("[Error:]Unreacable");
+                    rlist.push(inner);
                 }
             }
         }
