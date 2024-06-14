@@ -22,6 +22,7 @@ impl BaseElem
             }
         }
     }
+
     pub fn resolve_self(&mut self) -> Result<&str,String>
     {
         match self
@@ -57,14 +58,15 @@ pub trait ASTBranch
 #[derive(Clone)]
 pub struct BlockBranch
 {
-    contents: Option<Vec<BaseElem>>
+    contents: Option<Vec<BaseElem>>,
+    depth:isize
 }
 
 impl ASTBranch for BlockBranch
 {
     fn show(&self)
     {
-        println!("BlockBranch (");
+        println!("BlockBranch depth{} (", self.depth);
         match &self.contents
         {
             Some(e) => 
@@ -84,7 +86,10 @@ impl BlockBranch {
     pub fn resolve_self(&mut self) -> Result<&str,String>{
         match &self.contents {
             Some(a) => {
-                let parser = Parser::new(String::from(""));
+                let parser = Parser::new(
+                    String::from(""),
+                    self.depth + 1
+                );
                 match parser.code2vec(&a) {
                     Ok(v) => {
                         let mut rlist = v.to_vec();
@@ -123,23 +128,25 @@ impl ASTBranch for UnKnownBranch
 pub struct Parser
 {
     // TODO: 一時的にpublicにしているだけ
-    pub code:String
+    pub code:String,
+    pub depth:isize
 }
 
 impl Parser
 {
-    pub fn new(code:String) -> Self
+    pub fn new(code:String,depth:isize) -> Self
     {
         Self
         {
-            code: code
+            code: code,
+            depth:depth
         }
     }
 
     pub fn resolve(&self) -> Result<Vec<BaseElem>,String>
     {
         let code_list = self.code2_vec_pre_proc_func(&self.code);
-        let mut code_list = self.code2vec(&code_list);
+        let code_list = self.code2vec(&code_list);
         match code_list{
             Ok(mut v) => 
             {
@@ -156,9 +163,9 @@ impl Parser
         }
     }
 
-    pub fn code2vec(&self,code: &Vec<BaseElem>) -> Result<Vec<BaseElem>,&str>
+    fn code2vec(&self,code: &Vec<BaseElem>) -> Result<Vec<BaseElem>,&str>
     {
-        let mut code_list;
+        let code_list;
         //code_list = self.code2_vec_pre_proc_func(&code);
         match self.grouping_block(code.to_vec()){
             Ok(r) => code_list = r,
@@ -168,7 +175,7 @@ impl Parser
     }
 
 
-    pub fn code2_vec_pre_proc_func(&self, code:&String) -> Vec<BaseElem>
+    fn code2_vec_pre_proc_func(&self, code:&String) -> Vec<BaseElem>
     {
         return code
                     .chars()
@@ -176,7 +183,7 @@ impl Parser
                     .collect();
     }
 
-    pub fn grouping_block(&self,codelist: Vec<BaseElem>) -> Result<Vec<BaseElem>,&str>{
+    fn grouping_block(&self,codelist: Vec<BaseElem>) -> Result<Vec<BaseElem>,&str>{
         let mut rlist:Vec<BaseElem> = Vec::new();
         let mut group:Vec<BaseElem> = Vec::new();
         let mut depth:isize = 0;
@@ -217,7 +224,8 @@ impl Parser
                                     BlockBranch
                                     {
                                         //undec_contents: None,
-                                        contents:Some(group.clone())
+                                        contents: Some(group.clone()),
+                                        depth: self.depth
                                     }
                                 )
                             );
@@ -244,7 +252,7 @@ impl Parser
                         }
                     }
                 }
-                BaseElem::BlockElem(b) => {
+                BaseElem::BlockElem(_) => {
                     // pass
                 }
             }
