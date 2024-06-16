@@ -65,6 +65,11 @@ impl BaseElem
 pub trait ASTBranch
 {
     fn show(&self);
+}
+
+pub trait ASTAreaBranch
+{
+    fn new(contents:Option<Vec<BaseElem>>, depth:isize) -> Self;
     fn resolve_self(&mut self) -> Result<&str,String>;
 }
 
@@ -75,25 +80,14 @@ pub struct BlockBranch
     depth:isize
 }
 
-impl ASTBranch for BlockBranch
+impl ASTAreaBranch for BlockBranch
 {
-    fn show(&self)
-    {
-        println!("BlockBranch depth{} (", self.depth);
-        match &self.contents
-        {
-            Some(e) => 
-            {
-                for i in e
-                {
-                    i.show();
-                }
-            }
-            None => {/* pass */}
+    fn new(contents:Option<Vec<BaseElem>>, depth:isize) -> Self {
+        Self {
+            contents: contents,
+            depth: depth
         }
-        println!(")");
     }
-
     fn resolve_self(&mut self) -> Result<&str,String>{
         match &self.contents {
             Some(a) => {
@@ -127,6 +121,27 @@ impl ASTBranch for BlockBranch
     }
 }
 
+impl ASTBranch for BlockBranch
+{
+    fn show(&self)
+    {
+        println!("BlockBranch depth{} (", self.depth);
+        match &self.contents
+        {
+            Some(e) => 
+            {
+                for i in e
+                {
+                    i.show();
+                }
+            }
+            None => {/* pass */}
+        }
+        println!(")");
+    }
+
+}
+
 
 #[derive(Clone)]
 pub struct StringBranch
@@ -138,10 +153,6 @@ impl ASTBranch for StringBranch
 {
     fn show(&self) {
         println!("String ({})",self.contents);
-    }
-
-    fn resolve_self(&mut self) -> Result<&str,String> {
-        return Ok("Ok");
     }
 }
 
@@ -156,9 +167,6 @@ impl ASTBranch for UnKnownBranch
     fn show(&self)
     {
         println!("UnKnownBranch :\"{}\"", self.contents);
-    }
-    fn resolve_self(&mut self) -> Result<&str,String> {
-        return Ok("Ok!");
     }
 }
 
@@ -217,7 +225,12 @@ impl Parser
             Ok(r) => code_list = r,
             Err(e) => return Err(e)
         }
-        match self.grouping_block(code_list)
+        match self.grouping_elements(
+            code_list,
+            BaseElem::BlockElem,
+            '{',
+            '}'
+        )
         {
             Ok(r) => code_list = r,
             Err(e) => return Err(e)
@@ -318,17 +331,18 @@ impl Parser
         return Ok(rlist);
     }
 
-    fn grouping_block(&self,codelist: Vec<BaseElem>) -> Result<Vec<BaseElem>,&str>{
+    fn grouping_elements<T>(&self,codelist: Vec<BaseElem>, elemtype:fn(T) -> BaseElem, open_char:char, close_char:char) -> Result<Vec<BaseElem>,&str>
+    where T:ASTAreaBranch 
+    {
         let mut rlist:Vec<BaseElem> = Vec::new();
         let mut group:Vec<BaseElem> = Vec::new();
         let mut depth:isize = 0;
-
         for inner in codelist
         {
             match inner
             {
                 BaseElem::UnKnownElem(ref b) => {
-                    if b.contents == '{'
+                    if b.contents == open_char
                     {
                         if depth > 0
                         {
@@ -344,7 +358,7 @@ impl Parser
                         }
                         depth += 1;
                     }
-                    else if b.contents == '}'
+                    else if b.contents == close_char
                     {
                         depth -= 1;
                         if depth > 0
@@ -354,14 +368,21 @@ impl Parser
                         else if depth == 0
                         {
                             rlist.push(
-                                BaseElem::BlockElem
+                                /*elemtype
                                 (
+                                    
                                     BlockBranch
                                     {
                                         //undec_contents: None,
                                         contents: Some(group.clone()),
                                         depth: self.depth
                                     }
+                                )*/
+                                elemtype (
+                                    ASTAreaBranch::new(
+                                        Some(group.clone()),
+                                        self.depth
+                                    )
                                 )
                             );
                             group.clear();
@@ -409,4 +430,5 @@ impl Parser
         }
         return Ok(rlist);
     }
+
 }
