@@ -3,12 +3,15 @@
 pub enum BaseElem
 {
     BlockElem(BlockBranch),
+    ListBlockElem(ListBlockBranch),
+    ParenBlockElem(ParenBlockBranch),
     StringElem(StringBranch),
     UnKnownElem(UnKnownBranch),
 }
 
 impl BaseElem
 {
+
     pub fn show(&self) 
     {
         match self
@@ -25,6 +28,14 @@ impl BaseElem
             {
                 e.show();
             }
+            BaseElem::ListBlockElem(e) =>
+            {
+                e.show();
+            }
+            BaseElem::ParenBlockElem(e) =>
+            {
+                e.show();
+            }
         }
     }
 
@@ -34,17 +45,15 @@ impl BaseElem
         {
             BaseElem::BlockElem(e) => 
             {
-                match e.resolve_self()
-                {
-                    Ok(_) =>
-                    {
-                        return Ok("Ok")
-                    }
-                    Err(e) =>
-                    {
-                        return Err(e);
-                    }
-                }
+                return e.resolve_self();
+            }
+            BaseElem::ListBlockElem(e) =>
+            {
+                return e.resolve_self();
+            }
+            BaseElem::ParenBlockElem(e) =>
+            {
+                return e.resolve_self();
             }
 
             // not recursive elements 
@@ -88,6 +97,7 @@ impl ASTAreaBranch for BlockBranch
             depth: depth
         }
     }
+
     fn resolve_self(&mut self) -> Result<&str,String>{
         match &self.contents {
             Some(a) => {
@@ -123,6 +133,7 @@ impl ASTAreaBranch for BlockBranch
 
 impl ASTBranch for BlockBranch
 {
+
     fn show(&self)
     {
         println!("BlockBranch depth{} (", self.depth);
@@ -139,9 +150,91 @@ impl ASTBranch for BlockBranch
         }
         println!(")");
     }
-
 }
 
+#[derive(Clone)]
+pub struct ListBlockBranch
+{
+    contents: Option<Vec<BaseElem>>,
+    depth: isize
+}
+
+impl ASTBranch for ListBlockBranch
+{
+
+    fn show(&self) {
+        println!("List depth{} (", self.depth);
+        match &self.contents
+        {
+            Some(e) => 
+            {
+                for i in e
+                {
+                    i.show();
+                }
+            }
+            None => {/* pass */}
+        }
+        println!(")");
+    }
+}
+
+impl ASTAreaBranch for ListBlockBranch
+{
+
+    fn new(contents:Option<Vec<BaseElem>>, depth:isize) -> Self {
+        Self {
+            contents: contents,
+            depth: depth
+        }
+    }
+
+    fn resolve_self(&mut self) -> Result<&str,String> {
+        //todo!();
+        // TODO:impl list parser
+        // TODO:impl slice parser
+        return Ok("Ok!");
+    }
+}
+
+#[derive(Clone)]
+pub struct ParenBlockBranch
+{
+    contents:Option<Vec<BaseElem>>,
+    depth:isize
+}
+
+impl ASTBranch for ParenBlockBranch
+{
+    fn show(&self) {
+        println!("Paren depth{} (", self.depth);
+        match &self.contents
+        {
+            Some(e) => 
+            {
+                for i in e
+                {
+                    i.show();
+                }
+            }
+            None => {/* pass */}
+        }
+        println!(")");
+    }
+}
+
+impl ASTAreaBranch for ParenBlockBranch
+{
+    fn new(contents:Option<Vec<BaseElem>>, depth:isize) -> Self {
+        Self { contents: contents, depth: depth }
+    }
+    fn resolve_self(&mut self) -> Result<&str,String> {
+        // TODO: impl expr parser
+        // TODO: impl args parser
+        // TODO: impl tuple parser
+        return Ok("Ok!");
+    }
+}
 
 #[derive(Clone)]
 pub struct StringBranch
@@ -230,8 +323,25 @@ impl Parser
             BaseElem::BlockElem,
             '{',
             '}'
-        )
-        {
+        ){
+            Ok(r) => code_list = r,
+            Err(e) => return Err(e)
+        }
+        match self.grouping_elements(
+            code_list,
+            BaseElem::ListBlockElem,
+            '[',
+            ']'
+        ){
+            Ok(r) => code_list = r,
+            Err(e) => return Err(e)
+        }
+        match self.grouping_elements(
+            code_list,
+            BaseElem::ParenBlockElem,
+            '(',
+            ')'
+        ){
             Ok(r) => code_list = r,
             Err(e) => return Err(e)
         }
@@ -313,13 +423,18 @@ impl Parser
                 }
                 BaseElem::StringElem(_) => 
                 {
-                    // error
-                    //return Err("[Error:]Unreacable");
                     rlist.push(inner);
                 }
                 BaseElem::BlockElem(_) =>
                 {
-                    //return Err("[Error:]Unreacable");
+                    rlist.push(inner);
+                }
+                BaseElem::ListBlockElem(_) =>
+                {
+                    rlist.push(inner);
+                }
+                BaseElem::ParenBlockElem(_) =>
+                {
                     rlist.push(inner);
                 }
             }
@@ -341,7 +456,8 @@ impl Parser
         {
             match inner
             {
-                BaseElem::UnKnownElem(ref b) => {
+                BaseElem::UnKnownElem(ref b) =>
+                {
                     if b.contents == open_char
                     {
                         if depth > 0
@@ -368,17 +484,7 @@ impl Parser
                         else if depth == 0
                         {
                             rlist.push(
-                                /*elemtype
-                                (
-                                    
-                                    BlockBranch
-                                    {
-                                        //undec_contents: None,
-                                        contents: Some(group.clone()),
-                                        depth: self.depth
-                                    }
-                                )*/
-                                elemtype (
+                                elemtype(
                                     ASTAreaBranch::new(
                                         Some(group.clone()),
                                         self.depth
@@ -408,7 +514,8 @@ impl Parser
                         }
                     }
                 }
-                BaseElem::StringElem(_)=> {
+                BaseElem::StringElem(_)=>
+                {
                     if depth > 0
                     {
                         group.push(inner);
@@ -422,11 +529,59 @@ impl Parser
                         return Err("[Error:]");
                     }
                 }
-                BaseElem::BlockElem(_) => {
+                BaseElem::BlockElem(_) =>
+                {
                     // pass
-                    return Err("[Error:]");
+                    //println!("open char{}",open_char);
+                    if depth > 0
+                    {
+                        group.push(inner);
+                    }
+                    else if depth == 0
+                    {
+                        rlist.push(inner);
+                    }
+                    else
+                    {
+                        return Err("[Error:(dev)in grouping_elements function BlockElem match]");
+                    }
+                }
+                BaseElem::ListBlockElem(_) =>
+                {
+                    if depth > 0
+                    {
+                        group.push(inner);
+                    }
+                    else if depth == 0
+                    {
+                        rlist.push(inner);
+                    }
+                    else
+                    {
+                        return Err("[Error:(dev) in grouping_elements function ListBlockElem match]");
+                    }
+                }
+                BaseElem::ParenBlockElem(_) =>
+                {
+
+                    if depth > 0
+                    {
+                        group.push(inner);
+                    }
+                    else if depth == 0
+                    {
+                        rlist.push(inner);
+                    }
+                    else
+                    {
+                        return Err("[Error:(dev) in grouping_elements function ParenBlockElem, match]");
+                    }
                 }
             }
+        }
+        if depth != 0
+        {
+            return Err("[Error:(user error) block must be closed]");
         }
         return Ok(rlist);
     }
