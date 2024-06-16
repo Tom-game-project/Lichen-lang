@@ -137,7 +137,7 @@ pub struct StringBranch
 impl ASTBranch for StringBranch
 {
     fn show(&self) {
-        println!("String \"{}\"",self.contents);
+        println!("String ({})",self.contents);
     }
 
     fn resolve_self(&mut self) -> Result<&str,String> {
@@ -310,6 +310,10 @@ impl Parser
                     rlist.push(inner);
                 }
             }
+        }
+        if open_flag
+        {
+            return Err("[Error: quotation is not closed]");
         }
         return Ok(rlist);
     }
