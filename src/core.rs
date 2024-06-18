@@ -16,26 +16,11 @@ impl BaseElem
     {
         match self
         {
-            BaseElem::BlockElem(e) =>
-            {
-                e.show();
-            }
-            BaseElem::UnKnownElem(e) =>
-            {
-                e.show();
-            }
-            BaseElem::StringElem(e) => 
-            {
-                e.show();
-            }
-            BaseElem::ListBlockElem(e) =>
-            {
-                e.show();
-            }
-            BaseElem::ParenBlockElem(e) =>
-            {
-                e.show();
-            }
+            BaseElem::BlockElem(e) => e.show(),
+            BaseElem::UnKnownElem(e) => e.show(),
+            BaseElem::StringElem(e) => e.show(),
+            BaseElem::ListBlockElem(e) => e.show(),
+            BaseElem::ParenBlockElem(e) => e.show(),
         }
     }
 
@@ -43,30 +28,14 @@ impl BaseElem
     {
         match self
         {
-            BaseElem::BlockElem(e) => 
-            {
-                return e.resolve_self();
-            }
-            BaseElem::ListBlockElem(e) =>
-            {
-                return e.resolve_self();
-            }
-            BaseElem::ParenBlockElem(e) =>
-            {
-                return e.resolve_self();
-            }
+            // recursive analysis elements 
+            BaseElem::BlockElem(e) => return e.resolve_self(),
+            BaseElem::ListBlockElem(e) => return e.resolve_self(),
+            BaseElem::ParenBlockElem(e) => return e.resolve_self(),
 
-            // not recursive elements 
-            BaseElem::StringElem(_) => 
-            {
-                return Ok("Ok");
-            }
-            BaseElem::UnKnownElem(_) =>
-            {
-                // pass
-                // or return _.resolve_self()
-                return  Ok("Ok");
-            }
+            // unrecursive analysis elements 
+            BaseElem::StringElem(_)  => return Ok("Ok"),
+            BaseElem::UnKnownElem(_) => return  Ok("Ok"),
         }
     }
 }
@@ -421,22 +390,10 @@ impl Parser
                         }
                     }
                 }
-                BaseElem::StringElem(_) => 
-                {
-                    rlist.push(inner);
-                }
-                BaseElem::BlockElem(_) =>
-                {
-                    rlist.push(inner);
-                }
-                BaseElem::ListBlockElem(_) =>
-                {
-                    rlist.push(inner);
-                }
-                BaseElem::ParenBlockElem(_) =>
-                {
-                    rlist.push(inner);
-                }
+                BaseElem::StringElem(_)     => rlist.push(inner),
+                BaseElem::BlockElem(_)      => rlist.push(inner),
+                BaseElem::ListBlockElem(_)  => rlist.push(inner),
+                BaseElem::ParenBlockElem(_) => rlist.push(inner),
             }
         }
         if open_flag
