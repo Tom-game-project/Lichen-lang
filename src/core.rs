@@ -6,6 +6,7 @@ pub enum BaseElem
     ListBlockElem(ListBlockBranch),
     ParenBlockElem(ParenBlockBranch),
     StringElem(StringBranch),
+    WordElem(WordBranch),
     UnKnownElem(UnKnownBranch),
 }
 
@@ -21,6 +22,7 @@ impl BaseElem
             BaseElem::StringElem(e) => e.show(),
             BaseElem::ListBlockElem(e) => e.show(),
             BaseElem::ParenBlockElem(e) => e.show(),
+            BaseElem::WordElem(e) => e.show(),
         }
     }
 
@@ -35,6 +37,7 @@ impl BaseElem
 
             // unrecursive analysis elements 
             BaseElem::StringElem(_)  => return Ok("Ok"),
+            BaseElem::WordElem(_)  => return Ok("Ok"),
             BaseElem::UnKnownElem(_) => return  Ok("Ok"),
         }
     }
@@ -219,6 +222,20 @@ impl ASTBranch for StringBranch
 }
 
 #[derive(Clone)]
+pub struct WordBranch
+{
+    contents: String
+}
+
+impl ASTBranch for WordBranch
+{
+    fn show(&self)
+    {
+        println!("Word {}",self.contents)
+    }
+}
+
+#[derive(Clone)]
 pub struct UnKnownBranch
 {
     contents: char
@@ -314,6 +331,14 @@ impl Parser
             Ok(r) => code_list = r,
             Err(e) => return Err(e)
         }
+        match self.grouping_word(
+            code_list,
+            vec![' ','\t','\n'],
+            vec![',',';',':'])
+        {
+            Ok(r) => code_list = r,
+            Err(e) => return Err(e)
+        }
         return Ok(code_list);
     }
 
@@ -391,6 +416,7 @@ impl Parser
                     }
                 }
                 BaseElem::StringElem(_)     => rlist.push(inner),
+                BaseElem::WordElem(_)       => rlist.push(inner),
                 BaseElem::BlockElem(_)      => rlist.push(inner),
                 BaseElem::ListBlockElem(_)  => rlist.push(inner),
                 BaseElem::ParenBlockElem(_) => rlist.push(inner),
@@ -483,7 +509,7 @@ impl Parser
                     }
                     else
                     {
-                        return Err("[Error:]");
+                        return Err("[Error:] string depth is not collect. please check grouping function");
                     }
                 }
                 BaseElem::BlockElem(_) =>
@@ -520,7 +546,21 @@ impl Parser
                 }
                 BaseElem::ParenBlockElem(_) =>
                 {
-
+                    if depth > 0
+                    {
+                        group.push(inner);
+                    }
+                    else if depth == 0
+                    {
+                        rlist.push(inner);
+                    }
+                    else
+                    {
+                        return Err("[Error:(dev) in grouping_elements function ParenBlockElem, match]");
+                    }
+                }
+                BaseElem::WordElem(_) =>
+                {
                     if depth > 0
                     {
                         group.push(inner);
@@ -539,6 +579,81 @@ impl Parser
         if depth != 0
         {
             return Err("[Error:(user error) block must be closed]");
+        }
+        return Ok(rlist);
+    }
+
+    fn grouping_word(&self, codelist: Vec<BaseElem>, split:Vec<char>, excludes:Vec<char>) -> Result<Vec<BaseElem>, &str>
+    {
+        let mut rlist:Vec<BaseElem> = Vec::new();
+        let mut group:String = String::new();
+
+        for inner in codelist
+        {
+            match inner
+            {
+                BaseElem::UnKnownElem(ref e) =>
+                {
+                    if split.contains(&e.contents) // inner in split
+                    {
+                        if !group.is_empty()
+                        {
+                            rlist.push(
+                                BaseElem::WordElem(
+                                    WordBranch {
+                                        contents: group.clone()
+                                    }
+                                )
+                            );
+                            group.clear();
+                        }
+                    }
+                    else if excludes.contains(&e.contents) // inner in split
+                    {
+                        if !group.is_empty()
+                        {
+                            rlist.push(
+                                BaseElem::WordElem(
+                                    WordBranch {
+                                        contents: group.clone()
+                                    }
+                                )
+                            );
+                            group.clear();
+                        }
+                        rlist.push(inner);
+                    }
+                    else
+                    {
+                        group.push(e.contents);
+                    }
+                }
+                _ => {
+                    if !group.is_empty()
+                    {
+                        rlist.push(
+                            BaseElem::WordElem(
+                                WordBranch{
+                                    contents: group.clone()
+                                }
+                            )
+                        );
+                        group.clear();
+                    }
+                    rlist.push(inner);
+                }
+            }
+        }
+        if !group.is_empty()
+        {
+            rlist.push(
+                BaseElem::WordElem(
+                    WordBranch{
+                        contents: group.clone()
+                    }
+                )
+            );
+            group.clear();
         }
         return Ok(rlist);
     }
