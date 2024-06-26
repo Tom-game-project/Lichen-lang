@@ -59,30 +59,27 @@ impl ASTAreaBranch for BlockBranch {
     }
 
     fn resolve_self(&mut self) -> Result<&str, String> {
-        match &self.contents {
-            Some(a) => {
-                let parser = StateParser::new(String::from(""), self.depth + 1);
-                match parser.code2vec(&a) {
-                    Ok(v) => {
-                        let mut rlist = v.to_vec();
-                        for i in &mut rlist {
-                            match i.resolve_self() {
-                                Ok(_) => { /* pass */ }
-                                Err(_) => { /* pass */ }
-                            };
-                        }
-                        self.contents = Some(rlist);
-                        return Ok("OK!");
+        if let Some(a) = &self.contents {
+            let parser = StateParser::new(String::from(""), self.depth + 1);
+            match parser.code2vec(&a) {
+                Ok(v) => {
+                    let mut rlist = v.to_vec();
+                    for i in &mut rlist {
+                        match i.resolve_self() {
+                            Ok(_) => { /* pass */ }
+                            Err(_) => { /* pass */ }
+                        };
                     }
-                    Err(e) => {
-                        // println!("{}",e);
-                        return Err(String::from(e));
-                    }
+                    self.contents = Some(rlist);
+                    return Ok("OK!");
+                }
+                Err(e) => {
+                    // println!("{}",e);
+                    return Err(String::from(e));
                 }
             }
-            None => {
-                return Ok("Empty");
-            }
+        } else {
+            return Ok("Empty");
         }
     }
 }
@@ -90,13 +87,10 @@ impl ASTAreaBranch for BlockBranch {
 impl ASTBranch for BlockBranch {
     fn show(&self) {
         println!("BlockBranch depth{} (", self.depth);
-        match &self.contents {
-            Some(e) => {
-                for i in e {
-                    i.show();
-                }
+        if let Some(e) = &self.contents {
+            for i in e {
+                i.show();
             }
-            None => { /* pass */ }
         }
         println!(")");
     }
@@ -111,13 +105,10 @@ pub struct ListBlockBranch {
 impl ASTBranch for ListBlockBranch {
     fn show(&self) {
         println!("List depth{} (", self.depth);
-        match &self.contents {
-            Some(e) => {
-                for i in e {
-                    i.show();
-                }
+        if let Some(e) = &self.contents {
+            for i in e {
+                i.show();
             }
-            None => { /* pass */ }
         }
         println!(")");
     }
@@ -148,13 +139,10 @@ pub struct ParenBlockBranch {
 impl ASTBranch for ParenBlockBranch {
     fn show(&self) {
         println!("Paren depth{} (", self.depth);
-        match &self.contents {
-            Some(e) => {
-                for i in e {
-                    i.show();
-                }
+        if let Some(e) = &self.contents {
+            for i in e {
+                i.show();
             }
-            None => { /* pass */ }
         }
         println!(")");
     }
@@ -223,45 +211,40 @@ pub trait Parser {
         let mut group = String::new();
 
         for inner in codelist {
-            match inner {
-                BaseElem::UnKnownElem(ref v) => {
-                    if escape_flag {
-                        group.push(v.contents);
-                        escape_flag = false
-                    } else {
-                        if v.contents == '"'
-                        // is quochar
-                        {
-                            if open_flag {
-                                group.push(v.contents);
-                                rlist.push(BaseElem::StringElem(StringBranch {
-                                    contents: group.clone(),
-                                }));
-                                group.clear();
-                                open_flag = false;
-                            } else {
-                                group.push(v.contents);
-                                open_flag = true;
-                            }
+            if let BaseElem::UnKnownElem(ref v) = inner {
+                if escape_flag {
+                    group.push(v.contents);
+                    escape_flag = false
+                } else {
+                    if v.contents == '"'
+                    // is quochar
+                    {
+                        if open_flag {
+                            group.push(v.contents);
+                            rlist.push(BaseElem::StringElem(StringBranch {
+                                contents: group.clone(),
+                            }));
+                            group.clear();
+                            open_flag = false;
                         } else {
-                            if open_flag {
-                                if v.contents == '\\' {
-                                    escape_flag = true;
-                                } else {
-                                    escape_flag = false;
-                                }
-                                group.push(v.contents);
+                            group.push(v.contents);
+                            open_flag = true;
+                        }
+                    } else {
+                        if open_flag {
+                            if v.contents == '\\' {
+                                escape_flag = true;
                             } else {
-                                rlist.push(inner);
+                                escape_flag = false;
                             }
+                            group.push(v.contents);
+                        } else {
+                            rlist.push(inner);
                         }
                     }
                 }
-                BaseElem::StringElem(_) => rlist.push(inner),
-                BaseElem::WordElem(_) => rlist.push(inner),
-                BaseElem::BlockElem(_) => rlist.push(inner),
-                BaseElem::ListBlockElem(_) => rlist.push(inner),
-                BaseElem::ParenBlockElem(_) => rlist.push(inner),
+            } else {
+                rlist.push(inner);
             }
         }
         if open_flag {
@@ -284,94 +267,45 @@ pub trait Parser {
         let mut group: Vec<BaseElem> = Vec::new();
         let mut depth: isize = 0;
         for inner in codelist {
-            match inner {
-                BaseElem::UnKnownElem(ref b) => {
-                    if b.contents == open_char {
-                        if depth > 0 {
-                            group.push(inner);
-                        } else if depth == 0 {
-                            // pass
-                        } else {
-                            return Err("[Error:]");
-                        }
-                        depth += 1;
-                    } else if b.contents == close_char {
-                        depth -= 1;
-                        if depth > 0 {
-                            group.push(inner);
-                        } else if depth == 0 {
-                            rlist.push(elemtype(ASTAreaBranch::new(
-                                Some(group.clone()),
-                                self.get_depth(),
-                            )));
-                            group.clear();
-                        } else {
-                            return Err("[Error:]");
-                        }
+            if let BaseElem::UnKnownElem(ref b) = inner {
+                if b.contents == open_char {
+                    if depth > 0 {
+                        group.push(inner);
+                    } else if depth == 0 {
+                        // pass
                     } else {
-                        if depth > 0 {
-                            group.push(inner);
-                        } else if depth == 0 {
-                            rlist.push(inner);
-                        } else {
-                            return Err("[Error:]");
-                        }
+                        return Err("[Error:]");
                     }
-                }
-                BaseElem::StringElem(_) => {
+                    depth += 1;
+                } else if b.contents == close_char {
+                    depth -= 1;
+                    if depth > 0 {
+                        group.push(inner);
+                    } else if depth == 0 {
+                        rlist.push(elemtype(ASTAreaBranch::new(
+                            Some(group.clone()),
+                            self.get_depth(),
+                        )));
+                        group.clear();
+                    } else {
+                        return Err("[Error:]");
+                    }
+                } else {
                     if depth > 0 {
                         group.push(inner);
                     } else if depth == 0 {
                         rlist.push(inner);
                     } else {
-                        return Err(
-                            "[Error:] string depth is not collect. please check grouping function",
-                        );
+                        return Err("[Error:]");
                     }
                 }
-                BaseElem::BlockElem(_) => {
-                    // pass
-                    //println!("open char{}",open_char);
-                    if depth > 0 {
-                        group.push(inner);
-                    } else if depth == 0 {
-                        rlist.push(inner);
-                    } else {
-                        return Err("[Error:(dev)in grouping_elements function BlockElem match]");
-                    }
-                }
-                BaseElem::ListBlockElem(_) => {
-                    if depth > 0 {
-                        group.push(inner);
-                    } else if depth == 0 {
-                        rlist.push(inner);
-                    } else {
-                        return Err(
-                            "[Error:(dev) in grouping_elements function ListBlockElem match]",
-                        );
-                    }
-                }
-                BaseElem::ParenBlockElem(_) => {
-                    if depth > 0 {
-                        group.push(inner);
-                    } else if depth == 0 {
-                        rlist.push(inner);
-                    } else {
-                        return Err(
-                            "[Error:(dev) in grouping_elements function ParenBlockElem, match]",
-                        );
-                    }
-                }
-                BaseElem::WordElem(_) => {
-                    if depth > 0 {
-                        group.push(inner);
-                    } else if depth == 0 {
-                        rlist.push(inner);
-                    } else {
-                        return Err(
-                            "[Error:(dev) in grouping_elements function ParenBlockElem, match]",
-                        );
-                    }
+            } else {
+                if depth > 0 {
+                    group.push(inner);
+                } else if depth == 0 {
+                    rlist.push(inner);
+                } else {
+                    return Err("[Error:(user error) block must be closed]");
                 }
             }
         }
@@ -391,32 +325,19 @@ pub trait Parser {
         let mut group: String = String::new();
 
         for inner in codelist {
-            match inner {
-                BaseElem::UnKnownElem(ref e) => {
-                    if split.contains(&e.contents)
-                    // inner in split
-                    {
-                        if !group.is_empty() {
-                            rlist.push(BaseElem::WordElem(WordBranch {
-                                contents: group.clone(),
-                            }));
-                            group.clear();
-                        }
-                    } else if excludes.contains(&e.contents)
-                    // inner in split
-                    {
-                        if !group.is_empty() {
-                            rlist.push(BaseElem::WordElem(WordBranch {
-                                contents: group.clone(),
-                            }));
-                            group.clear();
-                        }
-                        rlist.push(inner);
-                    } else {
-                        group.push(e.contents);
+            if let BaseElem::UnKnownElem(ref e) = inner {
+                if split.contains(&e.contents)
+                // inner in split
+                {
+                    if !group.is_empty() {
+                        rlist.push(BaseElem::WordElem(WordBranch {
+                            contents: group.clone(),
+                        }));
+                        group.clear();
                     }
-                }
-                _ => {
+                } else if excludes.contains(&e.contents)
+                // inner in split
+                {
                     if !group.is_empty() {
                         rlist.push(BaseElem::WordElem(WordBranch {
                             contents: group.clone(),
@@ -424,7 +345,17 @@ pub trait Parser {
                         group.clear();
                     }
                     rlist.push(inner);
+                } else {
+                    group.push(e.contents);
                 }
+            } else {
+                if !group.is_empty() {
+                    rlist.push(BaseElem::WordElem(WordBranch {
+                        contents: group.clone(),
+                    }));
+                    group.clear();
+                }
+                rlist.push(inner);
             }
         }
         if !group.is_empty() {
