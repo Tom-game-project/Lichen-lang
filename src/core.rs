@@ -61,7 +61,7 @@ impl ASTAreaBranch for BlockBranch {
     fn resolve_self(&mut self) -> Result<&str, String> {
         match &self.contents {
             Some(a) => {
-                let parser = Parser::new(String::from(""), self.depth + 1);
+                let parser = StateParser::new(String::from(""), self.depth + 1);
                 match parser.code2vec(&a) {
                     Ok(v) => {
                         let mut rlist = v.to_vec();
@@ -208,73 +208,13 @@ impl ASTBranch for UnKnownBranch {
     }
 }
 
-pub struct Parser {
-    // TODO: 一時的にpublicにしているだけ
-    pub code: String,
-    pub depth: isize,
-}
+/// # Parser trait
+pub trait Parser {
+    fn new(code: String, depth: isize) -> Self;
 
-/// # Parser
-impl Parser {
-    pub fn new(code: String, depth: isize) -> Self {
-        Self {
-            code: code,
-            depth: depth,
-        }
-    }
-
-    pub fn resolve(&self) -> Result<Vec<BaseElem>, String> {
-        let code_list = self.code2_vec_pre_proc_func(&self.code);
-        let code_list = self.code2vec(&code_list);
-        match code_list {
-            Ok(mut v) => {
-                for i in &mut v {
-                    match i.resolve_self() {
-                        Ok(_) => { /* pass */ }
-                        //Err(e) => return Err(e)
-                        Err(_) => { /* pass */ }
-                    }
-                }
-                return Ok(v);
-            }
-            Err(e) => {
-                return Err(String::from(e));
-            }
-        }
-    }
-
-    fn code2vec(&self, code: &Vec<BaseElem>) -> Result<Vec<BaseElem>, &str> {
-        let mut code_list;
-        //code_list = self.code2_vec_pre_proc_func(&code);
-        match self.grouping_quotation(code.to_vec()) {
-            Ok(r) => code_list = r,
-            Err(e) => return Err(e),
-        }
-        match self.grouping_elements(code_list, BaseElem::BlockElem, '{', '}') {
-            Ok(r) => code_list = r,
-            Err(e) => return Err(e),
-        }
-        match self.grouping_elements(code_list, BaseElem::ListBlockElem, '[', ']') {
-            Ok(r) => code_list = r,
-            Err(e) => return Err(e),
-        }
-        match self.grouping_elements(code_list, BaseElem::ParenBlockElem, '(', ')') {
-            Ok(r) => code_list = r,
-            Err(e) => return Err(e),
-        }
-        match self.grouping_word(code_list, vec![' ', '\t', '\n'], vec![',', ';', ':']) {
-            Ok(r) => code_list = r,
-            Err(e) => return Err(e),
-        }
-        return Ok(code_list);
-    }
-
-    fn code2_vec_pre_proc_func(&self, code: &String) -> Vec<BaseElem> {
-        return code
-            .chars()
-            .map(|c| BaseElem::UnKnownElem(UnKnownBranch { contents: c }))
-            .collect();
-    }
+    fn resolve(&self) -> Result<Vec<BaseElem>, String>;
+    fn code2vec(&self, code: &Vec<BaseElem>) -> Result<Vec<BaseElem>, &str>;
+    fn get_depth(&self) -> isize;
 
     fn grouping_quotation(&self, codelist: Vec<BaseElem>) -> Result<Vec<BaseElem>, &str> {
         let mut open_flag = false;
@@ -362,7 +302,7 @@ impl Parser {
                         } else if depth == 0 {
                             rlist.push(elemtype(ASTAreaBranch::new(
                                 Some(group.clone()),
-                                self.depth,
+                                self.get_depth(),
                             )));
                             group.clear();
                         } else {
@@ -494,5 +434,106 @@ impl Parser {
             group.clear();
         }
         return Ok(rlist);
+    }
+}
+
+pub struct StateParser {
+    // TODO: 一時的にpublicにしているだけ
+    pub code: String,
+    pub depth: isize,
+}
+
+pub struct ExprParser {
+    // TODO: 一時的にpublicにしているだけ
+    pub code: String,
+    pub depth: isize,
+}
+
+impl Parser for StateParser {
+    fn new(code: String, depth: isize) -> Self {
+        Self {
+            code: code,
+            depth: depth,
+        }
+    }
+
+    fn resolve(&self) -> Result<Vec<BaseElem>, String> {
+        let code_list_data = self.code2_vec_pre_proc_func(&self.code);
+        let code_list = self.code2vec(&code_list_data);
+        match code_list {
+            Ok(mut v) => {
+                for i in &mut v {
+                    match i.resolve_self() {
+                        Ok(_) => { /* pass */ }
+                        //Err(e) => return Err(e)
+                        Err(_) => { /* pass */ }
+                    }
+                }
+                return Ok(v);
+            }
+            Err(e) => {
+                return Err(String::from(e));
+            }
+        }
+    }
+
+    fn code2vec(&self, code: &Vec<BaseElem>) -> Result<Vec<BaseElem>, &str> {
+        let mut code_list;
+        //code_list = self.code2_vec_pre_proc_func(&code);
+        match self.grouping_quotation(code.to_vec()) {
+            Ok(r) => code_list = r,
+            Err(e) => return Err(e),
+        }
+        match self.grouping_elements(code_list, BaseElem::BlockElem, '{', '}') {
+            Ok(r) => code_list = r,
+            Err(e) => return Err(e),
+        }
+        match self.grouping_elements(code_list, BaseElem::ListBlockElem, '[', ']') {
+            Ok(r) => code_list = r,
+            Err(e) => return Err(e),
+        }
+        match self.grouping_elements(code_list, BaseElem::ParenBlockElem, '(', ')') {
+            Ok(r) => code_list = r,
+            Err(e) => return Err(e),
+        }
+        match self.grouping_word(code_list, vec![' ', '\t', '\n'], vec![',', ';', ':']) {
+            Ok(r) => code_list = r,
+            Err(e) => return Err(e),
+        }
+        return Ok(code_list);
+    }
+
+    fn get_depth(&self) -> isize {
+        self.depth
+    }
+}
+
+impl StateParser {
+    fn code2_vec_pre_proc_func(&self, code: &String) -> Vec<BaseElem> {
+        return code
+            .chars()
+            .map(|c| BaseElem::UnKnownElem(UnKnownBranch { contents: c }))
+            .collect();
+    }
+}
+
+impl Parser for ExprParser {
+    fn new(code: String, depth: isize) -> Self {
+        Self {
+            code: code,
+            depth: depth,
+        }
+    }
+
+    fn resolve(&self) -> Result<Vec<BaseElem>, String> {
+        todo!();
+    }
+
+    fn code2vec(&self, code: &Vec<BaseElem>) -> Result<Vec<BaseElem>, &str> {
+        todo!();
+    }
+
+    fn get_depth(&self) -> isize {
+        self.depth
     }
 }
