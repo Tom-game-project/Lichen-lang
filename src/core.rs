@@ -4,6 +4,7 @@ pub enum BaseElem {
     ListBlockElem(ListBlockBranch),
     ParenBlockElem(ParenBlockBranch),
     StringElem(StringBranch),
+    SyntaxElem(SyntaxBranch),
     WordElem(WordBranch),
     UnKnownElem(UnKnownBranch),
 }
@@ -17,6 +18,7 @@ impl BaseElem {
             BaseElem::ListBlockElem(e) => e.show(),
             BaseElem::ParenBlockElem(e) => e.show(),
             BaseElem::WordElem(e) => e.show(),
+            BaseElem::SyntaxElem(e) => e.show(),
         }
     }
 
@@ -26,6 +28,7 @@ impl BaseElem {
             BaseElem::BlockElem(e) => return e.resolve_self(),
             BaseElem::ListBlockElem(e) => return e.resolve_self(),
             BaseElem::ParenBlockElem(e) => return e.resolve_self(),
+            BaseElem::SyntaxElem(e) => return e.resolve_self(),
 
             // unrecursive analysis elements
             BaseElem::StringElem(_) => return Ok("Ok"),
@@ -164,6 +167,31 @@ impl ASTAreaBranch for ParenBlockBranch {
 }
 
 #[derive(Clone)]
+pub struct SyntaxBranch {
+    name: String,
+    expr: Option<Box<BaseElem>>,
+    contents: Option<Vec<BaseElem>>,
+    depth: isize,
+    loopdepth: isize,
+}
+
+impl ASTBranch for SyntaxBranch {
+    fn show(&self) {
+        todo!()
+    }
+}
+
+impl ASTAreaBranch for SyntaxBranch {
+    fn new(contents: Option<Vec<BaseElem>>, depth: isize) -> Self {
+        todo!()
+    }
+
+    fn resolve_self(&mut self) -> Result<&str, String> {
+        todo!()
+    }
+}
+
+#[derive(Clone)]
 pub struct StringBranch {
     contents: String,
 }
@@ -198,12 +226,21 @@ impl ASTBranch for UnKnownBranch {
 
 /// # Parser trait
 pub trait Parser {
+    // const NUM:i32 = 1;
     fn new(code: String, depth: isize) -> Self;
 
     fn resolve(&self) -> Result<Vec<BaseElem>, String>;
     fn code2vec(&self, code: &Vec<BaseElem>) -> Result<Vec<BaseElem>, &str>;
     fn get_depth(&self) -> isize;
 
+    fn code2_vec_pre_proc_func(&self, code: &String) -> Vec<BaseElem> {
+        return code
+            .chars()
+            .map(|c| BaseElem::UnKnownElem(UnKnownBranch { contents: c }))
+            .collect();
+    }
+
+    // grouoping functions
     fn grouping_quotation(&self, codelist: Vec<BaseElem>) -> Result<Vec<BaseElem>, &str> {
         let mut open_flag = false;
         let mut escape_flag = false;
@@ -266,6 +303,7 @@ pub trait Parser {
         let mut rlist: Vec<BaseElem> = Vec::new();
         let mut group: Vec<BaseElem> = Vec::new();
         let mut depth: isize = 0;
+
         for inner in codelist {
             if let BaseElem::UnKnownElem(ref b) = inner {
                 if b.contents == open_char {
@@ -366,6 +404,8 @@ pub trait Parser {
         }
         return Ok(rlist);
     }
+
+    fn grouping_syntaxbox(&self, codelist: Vec<BaseElem>) -> Result<Vec<BaseElem>, &str>;
 }
 
 pub struct StateParser {
@@ -410,7 +450,6 @@ impl Parser for StateParser {
 
     fn code2vec(&self, code: &Vec<BaseElem>) -> Result<Vec<BaseElem>, &str> {
         let mut code_list;
-        //code_list = self.code2_vec_pre_proc_func(&code);
         match self.grouping_quotation(code.to_vec()) {
             Ok(r) => code_list = r,
             Err(e) => return Err(e),
@@ -437,16 +476,21 @@ impl Parser for StateParser {
     fn get_depth(&self) -> isize {
         self.depth
     }
-}
 
-impl StateParser {
-    fn code2_vec_pre_proc_func(&self, code: &String) -> Vec<BaseElem> {
-        return code
-            .chars()
-            .map(|c| BaseElem::UnKnownElem(UnKnownBranch { contents: c }))
-            .collect();
+    // grouping functions
+    fn grouping_syntaxbox(&self, codelist: Vec<BaseElem>) -> Result<Vec<BaseElem>, &str> {
+        todo!()
     }
 }
+
+// impl StateParser {
+//     fn code2_vec_pre_proc_func(&self, code: &String) -> Vec<BaseElem> {
+//         return code
+//             .chars()
+//             .map(|c| BaseElem::UnKnownElem(UnKnownBranch { contents: c }))
+//             .collect();
+//     }
+// }
 
 impl Parser for ExprParser {
     fn new(code: String, depth: isize) -> Self {
@@ -457,14 +501,74 @@ impl Parser for ExprParser {
     }
 
     fn resolve(&self) -> Result<Vec<BaseElem>, String> {
-        todo!();
+        // let codelist = self.code2vec(&self.code2_vec_pre_proc_func(code));
+        // for i in codelist{
+
+        // }
+        // return codelist;
+        let code_list_data = self.code2_vec_pre_proc_func(&self.code);
+        let code_list = self.code2vec(&code_list_data);
+        match code_list {
+            Ok(mut v) => {
+                for i in &mut v {
+                    match i.resolve_self() {
+                        Ok(_) => { /* pass */ }
+                        //Err(e) => return Err(e)
+                        Err(_) => { /* pass */ }
+                    }
+                }
+                return Ok(v);
+            }
+            Err(e) => {
+                return Err(String::from(e));
+            }
+        }
     }
 
     fn code2vec(&self, code: &Vec<BaseElem>) -> Result<Vec<BaseElem>, &str> {
-        todo!();
+        let mut code_list;
+        match self.grouping_quotation(code.to_vec()) {
+            Ok(r) => code_list = r,
+            Err(e) => return Err(e),
+        }
+        match self.grouping_elements(code_list, BaseElem::BlockElem, '{', '}') {
+            Ok(r) => code_list = r,
+            Err(e) => return Err(e),
+        }
+        match self.grouping_elements(code_list, BaseElem::ListBlockElem, '[', ']') {
+            Ok(r) => code_list = r,
+            Err(e) => return Err(e),
+        }
+        match self.grouping_elements(code_list, BaseElem::ParenBlockElem, '(', ')') {
+            Ok(r) => code_list = r,
+            Err(e) => return Err(e),
+        }
+        match self.grouping_word(code_list, vec![' ', '\t', '\n'], vec![',', ';', ':']) {
+            Ok(r) => code_list = r,
+            Err(e) => return Err(e),
+        }
+        return Ok(code_list);
     }
 
     fn get_depth(&self) -> isize {
         self.depth
+    }
+
+    fn grouping_syntaxbox(&self, codelist: Vec<BaseElem>) -> Result<Vec<BaseElem>, &str> {
+        let mut flag = false;
+        let mut name: String = String::new();
+        let mut group = Vec::new();
+        let mut rlist: Vec<BaseElem> = Vec::new();
+
+        for inner in codelist {
+            if let BaseElem::SyntaxElem(e) = inner {
+                //
+            } else {
+            }
+        }
+        if !group.is_empty() {
+            //rlist.push(value)
+        }
+        return Ok(rlist);
     }
 }
