@@ -5,6 +5,7 @@ pub enum BaseElem {
     ParenBlockElem(ParenBlockBranch),
     StringElem(StringBranch),
     SyntaxElem(SyntaxBranch),
+    SyntaxBoxElem(SyntaxBoxBranch),
     WordElem(WordBranch),
     UnKnownElem(UnKnownBranch),
 }
@@ -19,6 +20,7 @@ impl BaseElem {
             BaseElem::ParenBlockElem(e) => e.show(),
             BaseElem::WordElem(e) => e.show(),
             BaseElem::SyntaxElem(e) => e.show(),
+            BaseElem::SyntaxBoxElem(e) => e.show(),
         }
     }
 
@@ -29,6 +31,7 @@ impl BaseElem {
             BaseElem::ListBlockElem(e) => return e.resolve_self(),
             BaseElem::ParenBlockElem(e) => return e.resolve_self(),
             BaseElem::SyntaxElem(e) => return e.resolve_self(),
+            BaseElem::SyntaxBoxElem(e) => return e.resolve_self(),
 
             // unrecursive analysis elements
             BaseElem::StringElem(_) => return Ok("Ok"),
@@ -43,7 +46,7 @@ pub trait ASTBranch {
 }
 
 pub trait ASTAreaBranch {
-    fn new(contents: Option<Vec<BaseElem>>, depth: isize) -> Self;
+    fn new(contents: Option<Vec<BaseElem>>, depth: isize, loopdepth: isize) -> Self;
     fn resolve_self(&mut self) -> Result<&str, String>;
 }
 
@@ -51,19 +54,21 @@ pub trait ASTAreaBranch {
 pub struct BlockBranch {
     contents: Option<Vec<BaseElem>>,
     depth: isize,
+    loopdepth: isize,
 }
 
 impl ASTAreaBranch for BlockBranch {
-    fn new(contents: Option<Vec<BaseElem>>, depth: isize) -> Self {
+    fn new(contents: Option<Vec<BaseElem>>, depth: isize, loopdepth: isize) -> Self {
         Self {
             contents: contents,
             depth: depth,
+            loopdepth: loopdepth,
         }
     }
 
     fn resolve_self(&mut self) -> Result<&str, String> {
         if let Some(a) = &self.contents {
-            let parser = StateParser::new(String::from(""), self.depth + 1);
+            let parser = StateParser::new(String::from(""), self.depth + 1, self.loopdepth);
             match parser.code2vec(&a) {
                 Ok(v) => {
                     let mut rlist = v.to_vec();
@@ -103,6 +108,7 @@ impl ASTBranch for BlockBranch {
 pub struct ListBlockBranch {
     contents: Option<Vec<BaseElem>>,
     depth: isize,
+    loopdepth: isize,
 }
 
 impl ASTBranch for ListBlockBranch {
@@ -118,10 +124,11 @@ impl ASTBranch for ListBlockBranch {
 }
 
 impl ASTAreaBranch for ListBlockBranch {
-    fn new(contents: Option<Vec<BaseElem>>, depth: isize) -> Self {
+    fn new(contents: Option<Vec<BaseElem>>, depth: isize, loopdepth: isize) -> Self {
         Self {
             contents: contents,
             depth: depth,
+            loopdepth: loopdepth,
         }
     }
 
@@ -137,6 +144,7 @@ impl ASTAreaBranch for ListBlockBranch {
 pub struct ParenBlockBranch {
     contents: Option<Vec<BaseElem>>,
     depth: isize,
+    loopdepth: isize,
 }
 
 impl ASTBranch for ParenBlockBranch {
@@ -152,10 +160,11 @@ impl ASTBranch for ParenBlockBranch {
 }
 
 impl ASTAreaBranch for ParenBlockBranch {
-    fn new(contents: Option<Vec<BaseElem>>, depth: isize) -> Self {
+    fn new(contents: Option<Vec<BaseElem>>, depth: isize, loopdepth: isize) -> Self {
         Self {
             contents: contents,
             depth: depth,
+            loopdepth: loopdepth,
         }
     }
     fn resolve_self(&mut self) -> Result<&str, String> {
@@ -182,10 +191,33 @@ impl ASTBranch for SyntaxBranch {
 }
 
 impl ASTAreaBranch for SyntaxBranch {
-    fn new(contents: Option<Vec<BaseElem>>, depth: isize) -> Self {
+    fn new(contents: Option<Vec<BaseElem>>, depth: isize, loopdepth: isize) -> Self {
         todo!()
     }
 
+    fn resolve_self(&mut self) -> Result<&str, String> {
+        todo!()
+    }
+}
+
+#[derive(Clone)]
+pub struct SyntaxBoxBranch {
+    name: String,
+    contents: Vec<SyntaxBranch>,
+    depth: isize,
+    loopdepth: isize,
+}
+
+impl ASTBranch for SyntaxBoxBranch {
+    fn show(&self) {
+        todo!()
+    }
+}
+
+impl ASTAreaBranch for SyntaxBoxBranch {
+    fn new(contents: Option<Vec<BaseElem>>, depth: isize, loopdepth: isize) -> Self {
+        todo!()
+    }
     fn resolve_self(&mut self) -> Result<&str, String> {
         todo!()
     }
@@ -225,13 +257,53 @@ impl ASTBranch for UnKnownBranch {
 }
 
 /// # Parser trait
-pub trait Parser {
-    // const NUM:i32 = 1;
-    fn new(code: String, depth: isize) -> Self;
+pub trait Parser<'a> {
+    const LEFT_PRIORITY_LIST: [(&'a str, isize); 14] = [
+        ("||", -3),
+        ("&&", -2),
+        // PRIORITY 0
+        ("==", 0),
+        ("!=", 0),
+        ("<", 0),
+        (">", 0),
+        (">=", 0),
+        ("<=", 0),
+        // PRIORITY 1
+        ("+", 1),
+        ("-", 1),
+        // PRIORITY 2
+        ("*", 2),
+        ("/", 2),
+        ("%", 2),
+        ("@", 2),
+    ];
+    const RIGHT_PRIORITY_LIST: [(&'a str, isize); 7] = [
+        // PRIORITY -4
+        ("=", -4),
+        ("+=", -4),
+        ("-=", -4),
+        ("*=", -4),
+        ("/=", -4),
+        ("%=", -4),
+        ("**", 3),
+    ];
+    const PREFIX_PRIORITY_LIST: [(&'a str, isize); 1] = [
+        // PRIORITY -1
+        ("!", -1),
+    ];
+    const SPLIT_CHAR: [char; 3] = [' ', '\t', '\n'];
+    const EXCLUDE_WORDS: [&'a str; 3] = [";", ":", ","];
+    const SYNTAX_WORDS: [&'a str; 7] = ["if", "elif", "else", "loop", "for", "while", "match"];
+    const SYNTAX_WORDS_HEADS: [&'a str; 4] = ["if", "loop", "for", "while"];
+    const ESCAPECHAR: char = '\\';
+    const FUNCTION: &'a str = "fn";
+    const SEMICOLON: char = ';';
 
+    fn new(code: String, depth: isize, loopdepth: isize) -> Self;
     fn resolve(&self) -> Result<Vec<BaseElem>, String>;
     fn code2vec(&self, code: &Vec<BaseElem>) -> Result<Vec<BaseElem>, &str>;
     fn get_depth(&self) -> isize;
+    fn get_loopdepth(&self) -> isize;
 
     fn code2_vec_pre_proc_func(&self, code: &String) -> Vec<BaseElem> {
         return code
@@ -323,6 +395,7 @@ pub trait Parser {
                         rlist.push(elemtype(ASTAreaBranch::new(
                             Some(group.clone()),
                             self.get_depth(),
+                            self.get_loopdepth(),
                         )));
                         group.clear();
                     } else {
@@ -412,19 +485,22 @@ pub struct StateParser {
     // TODO: 一時的にpublicにしているだけ
     pub code: String,
     pub depth: isize,
+    pub loopdepth: isize,
 }
 
 pub struct ExprParser {
     // TODO: 一時的にpublicにしているだけ
     pub code: String,
     pub depth: isize,
+    pub loopdepth: isize,
 }
 
-impl Parser for StateParser {
-    fn new(code: String, depth: isize) -> Self {
+impl Parser<'_> for StateParser {
+    fn new(code: String, depth: isize, loopdepth: isize) -> Self {
         Self {
             code: code,
             depth: depth,
+            loopdepth: loopdepth,
         }
     }
 
@@ -477,6 +553,9 @@ impl Parser for StateParser {
         self.depth
     }
 
+    fn get_loopdepth(&self) -> isize {
+        self.loopdepth
+    }
     // grouping functions
     fn grouping_syntaxbox(&self, codelist: Vec<BaseElem>) -> Result<Vec<BaseElem>, &str> {
         todo!()
@@ -492,11 +571,12 @@ impl Parser for StateParser {
 //     }
 // }
 
-impl Parser for ExprParser {
-    fn new(code: String, depth: isize) -> Self {
+impl Parser<'_> for ExprParser {
+    fn new(code: String, depth: isize, loopdepth: isize) -> Self {
         Self {
             code: code,
             depth: depth,
+            loopdepth: loopdepth,
         }
     }
 
@@ -553,21 +633,76 @@ impl Parser for ExprParser {
     fn get_depth(&self) -> isize {
         self.depth
     }
+    fn get_loopdepth(&self) -> isize {
+        self.loopdepth
+    }
 
     fn grouping_syntaxbox(&self, codelist: Vec<BaseElem>) -> Result<Vec<BaseElem>, &str> {
         let mut flag = false;
         let mut name: String = String::new();
-        let mut group = Vec::new();
+        let mut group: Vec<SyntaxBranch> = Vec::new();
         let mut rlist: Vec<BaseElem> = Vec::new();
 
         for inner in codelist {
-            if let BaseElem::SyntaxElem(e) = inner {
-                //
+            if let BaseElem::SyntaxElem(ref e) = inner {
+                if Self::SYNTAX_WORDS_HEADS.contains(&e.name.as_str()) {
+                    flag = true;
+                    name = e.name.clone();
+                    group.push(e.clone());
+                } else if e.name == "elif" {
+                    if flag {
+                        group.push(e.clone());
+                    } else {
+                        return Err("please write \"if\",\"while\" or \"for\" statement head");
+                        // TODO:
+                    }
+                } else if e.name == "else" {
+                    if flag {
+                        group.push(e.clone());
+                        rlist.push(BaseElem::SyntaxBoxElem(SyntaxBoxBranch {
+                            name: name.clone(),
+                            contents: group.clone(),
+                            depth: self.depth,
+                            loopdepth: self.loopdepth,
+                        }));
+                        group.clear();
+                        name = String::from("");
+                        flag = false;
+                    } else {
+                        return Err("please write \"if\",\"while\" or \"for\" statement head");
+                        // TODO:
+                    }
+                } else {
+                    rlist.push(inner);
+                }
             } else {
+                if flag {
+                    if !group.is_empty() {
+                        rlist.push(BaseElem::SyntaxBoxElem(SyntaxBoxBranch {
+                            name: name.clone(),
+                            contents: group.clone(),
+                            depth: self.depth,
+                            loopdepth: self.loopdepth,
+                        }));
+                        group.clear();
+                        name = String::from("");
+                    } else {
+                        //pass
+                    }
+                    flag = false;
+                } else {
+                    //pass
+                }
+                rlist.push(inner);
             }
         }
         if !group.is_empty() {
-            //rlist.push(value)
+            rlist.push(BaseElem::SyntaxBoxElem(SyntaxBoxBranch {
+                name: name.clone(),
+                contents: group.clone(),
+                depth: self.depth,
+                loopdepth: self.loopdepth,
+            }));
         }
         return Ok(rlist);
     }
