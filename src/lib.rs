@@ -1,10 +1,12 @@
-mod core;
-use core::*;
+mod parser;
+use crate::parser::core::ExprParser;
+use crate::parser::core::Parser;
+use crate::parser::core::StateParser;
 
 // test case
 #[cfg(test)]
 mod tests {
-    use crate::{Parser, StateParser};
+    use crate::{ExprParser, Parser, StateParser};
 
     #[test]
     fn test00() {
