@@ -43,6 +43,8 @@ pub trait Parser<'a> {
     const FUNCTION: &'a str = "fn";
     const SEMICOLON: char = ';';
 
+    const CONTROL_STATEMENT: [&'a str; 4] = ["return", "break", "continue", "assert"];
+
     fn new(code: String, depth: isize, loopdepth: isize) -> Self;
     fn resolve(&self) -> Result<Vec<BaseElem>, String>;
     fn code2vec(&self, code: &Vec<BaseElem>) -> Result<Vec<BaseElem>, &str>;
@@ -223,6 +225,70 @@ pub trait Parser<'a> {
     }
 
     fn grouping_syntaxbox(&self, codelist: Vec<BaseElem>) -> Result<Vec<BaseElem>, &str>;
+
+    ///
+    /// TODO: Word以外について`()`が付与され呼ばれたときに
+    /// 関数として認識できるようにする必要がある
+    /// 例えば以下のような場合について
+    /// ```lichen
+    /// funcA()() // 関数を返却するような関数
+    /// a[]()     // 関数を保持しているリスト
+    /// ```
+    fn grouping_functioncall<T>(
+        &self,
+        codelist: Vec<BaseElem>,
+        elemtype: fn(T) -> BaseElem,
+    ) -> Result<Vec<BaseElem>, &str>
+    where
+        T: ASTAreaBranch,
+    {
+        let mut flag: bool = false;
+        let mut name_tmp: Option<WordBranch> = None;
+        let mut rlist: Vec<BaseElem> = Vec::new();
+
+        for inner in codelist {
+            if let BaseElem::WordElem(wb) = inner {
+                if flag {
+                    rlist.push(BaseElem::WordElem(wb.clone()));
+                }
+                name_tmp = Some(wb);
+                flag = true;
+            } else if let BaseElem::BlockElem(ref bb) = inner {
+                if let Some(wb) = name_tmp {
+                    if flag && <Self as Parser>::CONTROL_STATEMENT.contains(&&wb.contents.as_str())
+                    {
+                        rlist.push();
+                        name_tmp = None;
+                        flag = false;
+                    } else {
+                        rlist.push(BaseElem::WordElem(wb));
+                        rlist.push(inner);
+                        name_tmp = None;
+                    }
+                } else {
+                    rlist.push(inner);
+                    name_tmp = None;
+                }
+            } else {
+                if flag {
+                    if let Some(wb) = name_tmp {
+                        rlist.push(BaseElem::WordElem(wb));
+                    }
+                    rlist.push(inner);
+                    name_tmp = None;
+                    flag = false;
+                } else {
+                    rlist.push(inner);
+                }
+            }
+        }
+        if flag {
+            if let Some(v) = name_tmp {
+                rlist.push(BaseElem::WordElem(v));
+            }
+        }
+        return Ok(rlist);
+    }
 }
 
 pub struct StateParser {

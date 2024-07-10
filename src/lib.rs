@@ -6,6 +6,7 @@ use parser::core::StateParser;
 // test case
 #[cfg(test)]
 mod tests {
+
     use crate::{Parser, StateParser};
 
     #[test]
@@ -16,16 +17,13 @@ mod tests {
         println!("test case {}", program);
         let rlst = parser.resolve();
 
-        match rlst {
-            Ok(v) => {
-                for i in v {
-                    i.show();
-                }
+        if let Ok(v) = rlst {
+            for i in v {
+                i.show();
             }
-            Err(e) => {
-                println!("error msg {}", e);
-            }
-        }
+        } else if let Err(e) = rlst {
+            println!("{}", e);
+        };
 
         //println!("{:?}",rlst);
         //assert_eq!(2 + 2, 4);
