@@ -243,48 +243,73 @@ pub trait Parser<'a> {
         T: ASTAreaBranch,
     {
         let mut flag: bool = false;
-        let mut name_tmp: Option<WordBranch> = None;
+        let mut name_tmp: Option<BaseElem> = None;
         let mut rlist: Vec<BaseElem> = Vec::new();
 
         for inner in codelist {
-            if let BaseElem::WordElem(wb) = inner {
+            if let BaseElem::WordElem(ref wb) = inner {
+                // Case WordElem
                 if flag {
-                    rlist.push(BaseElem::WordElem(wb.clone()));
+                    if let Some(e) = name_tmp {
+                        rlist.push(e);
+                    }
                 }
-                name_tmp = Some(wb);
+                name_tmp = Some(inner);
                 flag = true;
-            } else if let BaseElem::BlockElem(ref bb) = inner {
-                if let Some(wb) = name_tmp {
-                    if flag && <Self as Parser>::CONTROL_STATEMENT.contains(&&wb.contents.as_str())
-                    {
-                        rlist.push();
-                        name_tmp = None;
-                        flag = false;
+            } else if let BaseElem::FuncElem(ref fb) = inner {
+                // Case FuncElem
+                if flag {
+                    if let Some(e) = name_tmp {
+                        rlist.push(e);
+                    }
+                }
+                name_tmp = Some(inner);
+                flag = true;
+            } else if let BaseElem::ParenBlockElem(ref pbb) = inner {
+                // Case ParenBlockElem
+                if flag {
+                    if let Some(ref base_e) = name_tmp {
+                        if let BaseElem::WordElem(ref wb) = base_e {
+                            if <Self as Parser>::CONTROL_STATEMENT.contains(&(&wb.contents as &str))
+                            {
+                                rlist.push(BaseElem::FuncElem(FuncBranch {
+                                    name: Box::new(base_e.clone()),
+                                    contents: pbb.clone(),
+                                    depth: self.get_depth(),
+                                    loopdepth: self.get_loopdepth(),
+                                }));
+                                name_tmp = None;
+                                flag = false;
+                            } else {
+                                // name tmp is not none
+                                rlist.push(base_e.clone()); // contents of name_tmp -> base_e
+                                rlist.push(inner);
+                                name_tmp = None;
+                            }
+                        } else if let BaseElem::FuncElem(_) = base_e {
+                            rlist.push(BaseElem::FuncElem(FuncBranch {
+                                name: Box::new(base_e.clone()),
+                                contents: pbb.clone(),
+                                depth: self.get_depth(),
+                                loopdepth: self.get_loopdepth(),
+                            }));
+                            name_tmp = None;
+                            flag = false;
+                        } else {
+                            // name tmp is not none
+                            rlist.push(base_e.clone()); // contents of name_tmp -> base_e
+                            rlist.push(inner);
+                            name_tmp = None;
+                        }
                     } else {
-                        rlist.push(BaseElem::WordElem(wb));
+                        //name tmp is none
                         rlist.push(inner);
+                        flag = false;
                         name_tmp = None;
                     }
-                } else {
-                    rlist.push(inner);
-                    name_tmp = None;
                 }
             } else {
-                if flag {
-                    if let Some(wb) = name_tmp {
-                        rlist.push(BaseElem::WordElem(wb));
-                    }
-                    rlist.push(inner);
-                    name_tmp = None;
-                    flag = false;
-                } else {
-                    rlist.push(inner);
-                }
-            }
-        }
-        if flag {
-            if let Some(v) = name_tmp {
-                rlist.push(BaseElem::WordElem(v));
+                // pass
             }
         }
         return Ok(rlist);

@@ -5,9 +5,11 @@ pub enum BaseElem {
     BlockElem(BlockBranch),
     ListBlockElem(ListBlockBranch),
     ParenBlockElem(ParenBlockBranch),
-    StringElem(StringBranch),
     SyntaxElem(SyntaxBranch),
     SyntaxBoxElem(SyntaxBoxBranch),
+    FuncElem(FuncBranch),
+    // without ASTAreaBranch trait structures
+    StringElem(StringBranch),
     WordElem(WordBranch),
     UnKnownElem(UnKnownBranch),
 }
@@ -23,6 +25,7 @@ impl BaseElem {
             BaseElem::WordElem(e) => e.show(),
             BaseElem::SyntaxElem(e) => e.show(),
             BaseElem::SyntaxBoxElem(e) => e.show(),
+            BaseElem::FuncElem(e) => e.show(),
         }
     }
 
@@ -34,6 +37,7 @@ impl BaseElem {
             BaseElem::ParenBlockElem(e) => return e.resolve_self(),
             BaseElem::SyntaxElem(e) => return e.resolve_self(),
             BaseElem::SyntaxBoxElem(e) => return e.resolve_self(),
+            BaseElem::FuncElem(e) => return e.resolve_self(),
 
             // unrecursive analysis elements
             BaseElem::StringElem(_) => return Ok("Ok"),
@@ -52,6 +56,7 @@ pub trait ASTAreaBranch {
     fn resolve_self(&mut self) -> Result<&str, String>;
 }
 
+/// # BlockBranch
 #[derive(Clone)]
 pub struct BlockBranch {
     pub contents: Option<Vec<BaseElem>>,
@@ -106,6 +111,7 @@ impl ASTBranch for BlockBranch {
     }
 }
 
+/// #ListBlockBranch
 #[derive(Clone)]
 pub struct ListBlockBranch {
     pub contents: Option<Vec<BaseElem>>,
@@ -142,6 +148,7 @@ impl ASTAreaBranch for ListBlockBranch {
     }
 }
 
+/// #ParenBlockBranch
 #[derive(Clone)]
 pub struct ParenBlockBranch {
     pub contents: Option<Vec<BaseElem>>,
@@ -177,6 +184,7 @@ impl ASTAreaBranch for ParenBlockBranch {
     }
 }
 
+/// #SyntaxBranch
 #[derive(Clone)]
 pub struct SyntaxBranch {
     pub name: String,
@@ -202,6 +210,7 @@ impl ASTAreaBranch for SyntaxBranch {
     }
 }
 
+/// # SyntaxBoxBranch
 #[derive(Clone)]
 pub struct SyntaxBoxBranch {
     pub name: String,
@@ -220,11 +229,37 @@ impl ASTAreaBranch for SyntaxBoxBranch {
     fn new(contents: Option<Vec<BaseElem>>, depth: isize, loopdepth: isize) -> Self {
         todo!()
     }
+
     fn resolve_self(&mut self) -> Result<&str, String> {
         todo!()
     }
 }
 
+#[derive(Clone)]
+pub struct FuncBranch {
+    pub name: Box<BaseElem>,
+    pub contents: ParenBlockBranch,
+    pub depth: isize,
+    pub loopdepth: isize,
+}
+
+impl ASTBranch for FuncBranch {
+    fn show(&self) {
+        todo!();
+    }
+}
+
+impl ASTAreaBranch for FuncBranch {
+    fn new(contents: Option<Vec<BaseElem>>, depth: isize, loopdepth: isize) -> Self {
+        todo!()
+    }
+    fn resolve_self(&mut self) -> Result<&str, String> {
+        todo!()
+    }
+}
+// without ASTAreaBranch trait structures
+
+/// # StringBranch
 #[derive(Clone)]
 pub struct StringBranch {
     pub contents: String,
@@ -236,6 +271,7 @@ impl ASTBranch for StringBranch {
     }
 }
 
+/// # WordBranch
 #[derive(Clone)]
 pub struct WordBranch {
     pub contents: String,
@@ -247,6 +283,7 @@ impl ASTBranch for WordBranch {
     }
 }
 
+/// # UnKnownBranch
 #[derive(Clone)]
 pub struct UnKnownBranch {
     pub contents: char,
