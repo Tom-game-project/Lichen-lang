@@ -58,7 +58,13 @@ pub fn up(a:i32,b:i32):(i32,i32){
         );
         let parser = StateParser::new(program.clone(), 0, 0);
 
-        println!("test case {}", program);
+        println!(
+            "----------------------test case-----------------------
+{}
+------------------------------------------------------
+",
+            program
+        );
         let rlst = parser.resolve();
 
         match rlst {
@@ -74,5 +80,9 @@ pub fn up(a:i32,b:i32):(i32,i32){
 
         //println!("{:?}",rlst);
         //assert_eq!(2 + 2, 4);
+    }
+    #[test]
+    fn test02() {
+        println!("{}", "@".repeat(5));
     }
 }

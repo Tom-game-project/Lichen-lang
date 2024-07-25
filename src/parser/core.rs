@@ -78,6 +78,7 @@ pub trait Parser<'a> {
                             group.push(v.contents);
                             rlist.push(BaseElem::StringElem(StringBranch {
                                 contents: group.clone(),
+                                depth: self.get_depth(),
                             }));
                             group.clear();
                             open_flag = false;
@@ -172,6 +173,8 @@ pub trait Parser<'a> {
         return Ok(rlist);
     }
 
+    /// # grouping_word
+    /// スペースなどので区切られた単語をまとめる
     fn grouping_word(
         &self,
         codelist: Vec<BaseElem>,
@@ -312,6 +315,11 @@ pub trait Parser<'a> {
                 // pass
             }
         }
+        if flag {
+            if let Some(e) = name_tmp {
+                rlist.push(e);
+            }
+        }
         return Ok(rlist);
     }
 }
@@ -391,6 +399,7 @@ impl Parser<'_> for StateParser {
     fn get_loopdepth(&self) -> isize {
         self.loopdepth
     }
+
     // grouping functions
     fn grouping_syntaxbox(&self, codelist: Vec<BaseElem>) -> Result<Vec<BaseElem>, &str> {
         todo!()
@@ -468,6 +477,7 @@ impl Parser<'_> for ExprParser {
     fn get_depth(&self) -> isize {
         self.depth
     }
+
     fn get_loopdepth(&self) -> isize {
         self.loopdepth
     }

@@ -101,7 +101,11 @@ impl ASTAreaBranch for BlockBranch {
 
 impl ASTBranch for BlockBranch {
     fn show(&self) {
-        println!("BlockBranch depth{} (", self.depth);
+        println!(
+            "{}BlockBranch depth{} (",
+            " ".repeat(self.depth as usize),
+            self.depth
+        );
         if let Some(e) = &self.contents {
             for i in e {
                 i.show();
@@ -121,7 +125,11 @@ pub struct ListBlockBranch {
 
 impl ASTBranch for ListBlockBranch {
     fn show(&self) {
-        println!("List depth{} (", self.depth);
+        println!(
+            "{}List depth{} (",
+            " ".repeat(self.depth as usize),
+            self.depth
+        );
         if let Some(e) = &self.contents {
             for i in e {
                 i.show();
@@ -158,7 +166,11 @@ pub struct ParenBlockBranch {
 
 impl ASTBranch for ParenBlockBranch {
     fn show(&self) {
-        println!("Paren depth{} (", self.depth);
+        println!(
+            "{}Paren depth{} (",
+            " ".repeat(self.depth as usize),
+            self.depth
+        );
         if let Some(e) = &self.contents {
             for i in e {
                 i.show();
@@ -263,11 +275,17 @@ impl ASTAreaBranch for FuncBranch {
 #[derive(Clone)]
 pub struct StringBranch {
     pub contents: String,
+    pub depth: isize,
 }
 
 impl ASTBranch for StringBranch {
     fn show(&self) {
         println!("String ({})", self.contents);
+        println!(
+            "{}String ({})",
+            " ".repeat(self.depth as usize),
+            self.contents
+        );
     }
 }
 
