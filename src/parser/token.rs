@@ -51,12 +51,18 @@ pub trait ASTBranch {
     fn show(&self);
 }
 
+/// # ASTAreaBranch
+/// ## resolve_self
+/// depthをインクリメントするときは、`resolve_self`内で宣言するParserにself.get_depth + 1をして実装する必要がある
 pub trait ASTAreaBranch {
     fn new(contents: Option<Vec<BaseElem>>, depth: isize, loopdepth: isize) -> Self;
     fn resolve_self(&mut self) -> Result<&str, String>;
 }
 
 /// # BlockBranch
+/// ブロックを格納するデータstruct
+/// 内部では文を解析するパーサを呼び出す必要がある
+///
 #[derive(Clone)]
 pub struct BlockBranch {
     pub contents: Option<Vec<BaseElem>>,
@@ -116,6 +122,8 @@ impl ASTBranch for BlockBranch {
 }
 
 /// #ListBlockBranch
+/// listを格納するためのデータstruct
+/// 中では式を解析するパーサを呼び出す必要がある
 #[derive(Clone)]
 pub struct ListBlockBranch {
     pub contents: Option<Vec<BaseElem>>,
@@ -157,6 +165,13 @@ impl ASTAreaBranch for ListBlockBranch {
 }
 
 /// #ParenBlockBranch
+/// `()`を使用したプログラムにおけるデータを格納するstruct
+/// 中では,
+/// - 式を解析する必要がある場合
+/// - タイプ宣言を解析する必要がある場合１ ex) (a:T, b:T)
+/// - タイプ宣言を解析する必要がある場合２ ex) (T, T)
+/// があり個別に呼び出すパーサを実装する必要がある。
+/// 実装する
 #[derive(Clone)]
 pub struct ParenBlockBranch {
     pub contents: Option<Vec<BaseElem>>,
@@ -197,6 +212,10 @@ impl ASTAreaBranch for ParenBlockBranch {
 }
 
 /// #SyntaxBranch
+/// `if` `else` `while` `loop` `for`などのデータを扱うstruct
+/// resolve_selfはそれぞれ
+/// `()`で格納されているデータに関しては`ParenBlockBranch`をnormalで呼び出す
+/// `{}`で格納されているデータに関しては`BlockBranch`のパーサに丸投げする。
 #[derive(Clone)]
 pub struct SyntaxBranch {
     pub name: String,
@@ -269,7 +288,8 @@ impl ASTAreaBranch for FuncBranch {
         todo!()
     }
 }
-// without ASTAreaBranch trait structures
+
+// structures without ASTAreaBranch trait b
 
 /// # StringBranch
 #[derive(Clone)]
@@ -290,6 +310,8 @@ impl ASTBranch for StringBranch {
 }
 
 /// # WordBranch
+/// 単語を格納するためのstruct
+/// ASTAreaBranchを実装しないため`resolve_self`メソッドを持たない
 #[derive(Clone)]
 pub struct WordBranch {
     pub contents: String,
@@ -302,6 +324,7 @@ impl ASTBranch for WordBranch {
 }
 
 /// # UnKnownBranch
+///未定トークンが以下のstructに分類される
 #[derive(Clone)]
 pub struct UnKnownBranch {
     pub contents: char,
