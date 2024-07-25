@@ -211,16 +211,17 @@ impl ASTAreaBranch for ParenBlockBranch {
     }
 }
 
-/// #SyntaxBranch
-/// `if` `else` `while` `loop` `for`などのデータを扱うstruct
+/// # SyntaxBranch
+/// `if` `elif` `else` `while` `loop` `for`などのデータを扱うstruct
 /// resolve_selfはそれぞれ
 /// `()`で格納されているデータに関しては`ParenBlockBranch`をnormalで呼び出す
 /// `{}`で格納されているデータに関しては`BlockBranch`のパーサに丸投げする。
+/// 当然、全てのブロックが何かで満たされるわけではないので注意
 #[derive(Clone)]
 pub struct SyntaxBranch {
     pub name: String,
-    pub expr: Option<Box<BaseElem>>,
-    pub contents: Option<Vec<BaseElem>>,
+    pub expr: Option<ParenBlockBranch>,
+    pub contents: Option<BlockBranch>,
     pub depth: isize,
     pub loopdepth: isize,
 }
@@ -242,6 +243,7 @@ impl ASTAreaBranch for SyntaxBranch {
 }
 
 /// # SyntaxBoxBranch
+/// まとまった文法として解釈される`if elif else` `while else` `for else`などの文法をまとめる
 #[derive(Clone)]
 pub struct SyntaxBoxBranch {
     pub name: String,
@@ -290,6 +292,14 @@ impl ASTAreaBranch for FuncBranch {
 }
 
 // structures without ASTAreaBranch trait b
+
+/// #OperatorBranch
+/// 全ての演算子
+#[derive(Clone)]
+pub struct OperatorBranch {
+    pub ope: String,
+    pub depth: isize,
+}
 
 /// # StringBranch
 #[derive(Clone)]

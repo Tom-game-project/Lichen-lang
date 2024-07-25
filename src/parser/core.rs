@@ -237,14 +237,7 @@ pub trait Parser<'a> {
     /// funcA()() // 関数を返却するような関数
     /// a[]()     // 関数を保持しているリスト
     /// ```
-    fn grouping_functioncall<T>(
-        &self,
-        codelist: Vec<BaseElem>,
-        elemtype: fn(T) -> BaseElem,
-    ) -> Result<Vec<BaseElem>, &str>
-    where
-        T: ASTAreaBranch,
-    {
+    fn grouping_functioncall<T>(&self, codelist: Vec<BaseElem>) -> Result<Vec<BaseElem>, &str> {
         let mut flag: bool = false;
         let mut name_tmp: Option<BaseElem> = None;
         let mut rlist: Vec<BaseElem> = Vec::new();
@@ -405,15 +398,6 @@ impl Parser<'_> for StateParser {
         todo!()
     }
 }
-
-// impl StateParser {
-//     fn code2_vec_pre_proc_func(&self, code: &String) -> Vec<BaseElem> {
-//         return code
-//             .chars()
-//             .map(|c| BaseElem::UnKnownElem(UnKnownBranch { contents: c }))
-//             .collect();
-//     }
-// }
 
 impl Parser<'_> for ExprParser {
     fn new(code: String, depth: isize, loopdepth: isize) -> Self {
