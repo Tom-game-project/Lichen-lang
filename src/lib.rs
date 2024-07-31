@@ -3,6 +3,9 @@ mod parser;
 use parser::core::Parser;
 use parser::core::StateParser;
 
+mod abs;
+mod token;
+
 // test case
 #[cfg(test)]
 mod tests {
