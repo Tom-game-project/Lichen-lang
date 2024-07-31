@@ -1,5 +1,5 @@
 use crate::abs::ast::*;
-use crate::parser::core::*;
+use crate::parser::core_parser::*;
 
 pub struct StateParser {
     // TODO: 一時的にpublicにしているだけ

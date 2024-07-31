@@ -1,5 +1,5 @@
 use crate::abs::ast::*;
-use crate::parser::core::*;
+use crate::parser::core_parser::*;
 
 use crate::token::syntax::SyntaxBranch;
 use crate::token::syntax_box::SyntaxBoxBranch;
