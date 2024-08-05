@@ -21,11 +21,6 @@ impl Parser<'_> for ExprParser {
     }
 
     fn resolve(&self) -> Result<Vec<BaseElem>, String> {
-        // let codelist = self.code2vec(&self.code2_vec_pre_proc_func(code));
-        // for i in codelist{
-
-        // }
-        // return codelist;
         let code_list_data = self.code2_vec_pre_proc_func(&self.code);
         let code_list = self.code2vec(&code_list_data);
         match code_list {
