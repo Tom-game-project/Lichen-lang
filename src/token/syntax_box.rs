@@ -1,5 +1,6 @@
 use crate::abs::ast::*;
 use crate::token::syntax::SyntaxBranch;
+
 /// # SyntaxBoxBranch
 /// まとまった文法として解釈される`if elif else` `while else` `for else`などの文法をまとめる
 #[derive(Clone)]

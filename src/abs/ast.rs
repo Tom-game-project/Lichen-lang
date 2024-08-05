@@ -4,6 +4,9 @@ use crate::token::{
     syntax_box::SyntaxBoxBranch, unknown::UnKnownBranch, word::WordBranch,
 };
 
+/// # BaseElem
+/// 抽象的なtoken
+/// プログラムの要素を表現できる
 #[derive(Clone)]
 pub enum BaseElem {
     BlockElem(BlockBranch),
@@ -51,6 +54,9 @@ impl BaseElem {
     }
 }
 
+/// #  ASTBranch
+/// このtraitを実装している構造体は
+/// - 自分自身の構造をわかりやすく出力できる
 pub trait ASTBranch {
     fn show(&self);
 }
