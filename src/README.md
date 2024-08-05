@@ -17,3 +17,9 @@ cargo test --package lichen-lang --lib -- tests::test00 --exact --show-output
 ```bash
 cargo test --package lichen-lang --lib -- tests::test01 --exact --show-output
 ```
+
+### expr test 00
+
+```bash
+cargo test --package lichen-lang --lib -- tests::expr_test00 --exact --show-output
+```
