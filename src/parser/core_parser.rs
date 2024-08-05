@@ -5,6 +5,7 @@ use crate::token::{
 };
 
 /// # Parser trait
+/// パーサのコア実装
 pub trait Parser<'a> {
     const LEFT_PRIORITY_LIST: [(&'a str, isize); 14] = [
         ("||", -3),

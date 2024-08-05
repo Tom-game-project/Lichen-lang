@@ -1,6 +1,8 @@
 use crate::abs::ast::*;
 use crate::token::paren_block::ParenBlockBranch;
 
+/// # FuncBranch
+/// 関数宣言を探す
 #[derive(Clone)]
 pub struct FuncBranch {
     pub name: Box<BaseElem>,
