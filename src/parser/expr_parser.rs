@@ -46,37 +46,27 @@ impl Parser<'_> for ExprParser {
     }
 
     fn code2vec(&self, code: &Vec<BaseElem>) -> Result<Vec<BaseElem>, &str> {
-        // macro
-        macro_rules! grouping_quos {
-            ($code_list:ident , $code:expr) => {
-                match self.grouping_quotation($code) {
-                    Ok(r) => $code_list = r,
+        // -----    macro   -----
+        macro_rules! err_proc {
+            ($code_list:ident = $grouping_func:expr) => {
+                $code_list = match $grouping_func {
+                    Ok(r) => r,
                     Err(e) => return Err(e),
                 }
             };
         }
-        macro_rules! groupin_blocks {
-            ($code_list:ident ,$func:path, $open_char:expr, $close_char: expr) => {
-                match self.grouping_elements($code_list, $func, $open_char, $close_char) {
-                    Ok(r) => $code_list = r,
-                    Err(e) => return Err(e),
-                }
-            };
-        }
-        macro_rules! grouping_words {
-            ($code_list:ident , $split:expr, $exclude:expr) => {
-                match self.grouping_word($code_list, $split, $exclude) {
-                    Ok(r) => $code_list = r,
-                    Err(e) => return Err(e),
-                }
-            };
-        }
+        // ----- start code -----
         let mut code_list;
-        grouping_quos!(code_list, code.to_vec());
-        groupin_blocks!(code_list, BaseElem::BlockElem, '{', '}');
-        groupin_blocks!(code_list, BaseElem::ListBlockElem, '[', ']');
-        groupin_blocks!(code_list, BaseElem::ParenBlockElem, '(', ')');
-        grouping_words!(code_list, vec![' ', '\t', '\n'], vec![',', ';', ':']);
+        // grouping_quos!(code_list, code.to_vec());
+        err_proc!(code_list = self.grouping_quotation(code.to_vec()));
+        err_proc!(code_list = self.grouping_elements(code_list, BaseElem::BlockElem, '{', '}'));
+        err_proc!(code_list = self.grouping_elements(code_list, BaseElem::ListBlockElem, '[', ']'));
+        err_proc!(
+            code_list = self.grouping_elements(code_list, BaseElem::ParenBlockElem, '(', ')')
+        );
+        err_proc!(
+            code_list = self.grouping_word(code_list, vec![' ', '\t', '\n'], vec![',', ';', ':'])
+        );
         return Ok(code_list);
     }
 
