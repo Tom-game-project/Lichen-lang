@@ -40,10 +40,10 @@ impl Parser<'_> for StateParser {
     fn code2vec(&self, code: &Vec<BaseElem>) -> Result<Vec<BaseElem>, &str> {
         // -----    macro   -----
         /// # err_proc
-        /// errorがあればErr()を返却、なければ代入
+        /// errorがあればErr()を返却、なければ値を返す
         macro_rules! err_proc {
-            ($code_list:ident = $grouping_func:expr) => {
-                $code_list = match $grouping_func {
+            ($grouping_func:expr) => {
+                match $grouping_func {
                     Ok(r) => r,
                     Err(e) => return Err(e),
                 }
@@ -51,15 +51,13 @@ impl Parser<'_> for StateParser {
         }
         // ----- start code -----
         let mut code_list;
-        err_proc!(code_list = self.grouping_quotation(code.to_vec()));
-        err_proc!(code_list = self.grouping_elements(code_list, BaseElem::BlockElem, '{', '}'));
-        err_proc!(code_list = self.grouping_elements(code_list, BaseElem::ListBlockElem, '[', ']'));
-        err_proc!(
-            code_list = self.grouping_elements(code_list, BaseElem::ParenBlockElem, '(', ')')
-        );
-        err_proc!(
-            code_list = self.grouping_word(code_list, vec![' ', '\t', '\n'], vec![',', ';', ':'])
-        );
+        code_list = err_proc!(self.grouping_quotation(code.to_vec()));
+        code_list = err_proc!(self.grouping_elements(code_list, BaseElem::BlockElem, '{', '}'));
+        code_list = err_proc!(self.grouping_elements(code_list, BaseElem::ListBlockElem, '[', ']'));
+        code_list =
+            err_proc!(self.grouping_elements(code_list, BaseElem::ParenBlockElem, '(', ')'));
+        code_list =
+            err_proc!(self.grouping_word(code_list, vec![' ', '\t', '\n'], vec![',', ';', ':']));
         return Ok(code_list);
     }
 
