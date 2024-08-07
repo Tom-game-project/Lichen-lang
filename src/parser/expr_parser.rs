@@ -16,6 +16,10 @@ pub struct ExprParser {
 }
 
 impl ExprParser {
+    /// 演算子をまとめる
+    /// 演算子が長いものから順番にまとめていく必要がある
+    /// 例えば、
+    /// `<`より`<=`は最初にgroupingされる必要がある
     fn grouoping_operator_unit(
         &self,
         codelist: Vec<BaseElem>,
@@ -64,7 +68,6 @@ impl ExprParser {
                         .map(|c| BaseElem::UnKnownElem(UnKnownBranch { contents: c }))
                         .collect();
                     rlist.extend(grouup_tmp);
-                    group.clear();
                 } else if ope_size == group.len() {
                     if group == ope {
                         rlist.push(BaseElem::OpeElem(OperatorBranch {
@@ -79,16 +82,18 @@ impl ExprParser {
                             .collect();
                         rlist.extend(grouup_tmp);
                     }
-                    group.clear()
+                } else {
+                    // rlist += group
+                    let grouup_tmp: Vec<BaseElem> = group
+                        .chars()
+                        .map(|c| BaseElem::UnKnownElem(UnKnownBranch { contents: c }))
+                        .collect();
+                    rlist.extend(grouup_tmp);
                 }
+                group.clear();
+                rlist.push(inner);
             }
-            // match inner {
-            //     BaseElem::UnKnownElem(e) => {}
-            //     _ => {
-            //         //
-            //     }
-            // }
-        }
+        } //end of "for inner in codelist"
         return Ok(rlist);
     }
 
