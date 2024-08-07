@@ -1,14 +1,100 @@
+use std::vec;
+
 use crate::abs::ast::*;
 use crate::parser::core_parser::*;
 
+use crate::token::operator::OperatorBranch;
 use crate::token::syntax::SyntaxBranch;
 use crate::token::syntax_box::SyntaxBoxBranch;
+use crate::token::unknown::UnKnownBranch;
 
 pub struct ExprParser {
     // TODO: 一時的にpublicにしているだけ
     pub code: String,
     pub depth: isize,
     pub loopdepth: isize,
+}
+
+impl ExprParser {
+    fn grouoping_operator_unit(
+        &self,
+        codelist: Vec<BaseElem>,
+        ope: String,
+    ) -> Result<Vec<BaseElem>, &str> {
+        let mut group: String = String::new();
+        let mut rlist: Vec<BaseElem> = Vec::new();
+
+        let ope_size = ope.len();
+        for inner in codelist {
+            if let BaseElem::UnKnownElem(e) = inner {
+                // 未解決の場合
+                group.push(e.contents);
+                if group.len() < ope_size {
+                    continue;
+                } else if ope_size == group.len() {
+                    if group == ope {
+                        rlist.push(BaseElem::OpeElem(OperatorBranch {
+                            ope: group.clone(),
+                            depth: self.depth,
+                        }))
+                    } else {
+                        // rlist += group
+                        let grouup_tmp: Vec<BaseElem> = group
+                            .chars()
+                            .map(|c| BaseElem::UnKnownElem(UnKnownBranch { contents: c }))
+                            .collect();
+                        rlist.extend(grouup_tmp);
+                    }
+                } else {
+                    // ope_size < group.len()
+                    // rlist += group
+                    let grouup_tmp: Vec<BaseElem> = group
+                        .chars()
+                        .map(|c| BaseElem::UnKnownElem(UnKnownBranch { contents: c }))
+                        .collect();
+                    rlist.extend(grouup_tmp);
+                }
+                group.clear();
+            } else {
+                // 既にtokenが割り当てられているとき
+                if group.len() < ope_size {
+                    // rlist += group
+                    let grouup_tmp: Vec<BaseElem> = group
+                        .chars()
+                        .map(|c| BaseElem::UnKnownElem(UnKnownBranch { contents: c }))
+                        .collect();
+                    rlist.extend(grouup_tmp);
+                    group.clear();
+                } else if ope_size == group.len() {
+                    if group == ope {
+                        rlist.push(BaseElem::OpeElem(OperatorBranch {
+                            ope: group.clone(),
+                            depth: self.depth,
+                        }))
+                    } else {
+                        // rlist += group
+                        let grouup_tmp: Vec<BaseElem> = group
+                            .chars()
+                            .map(|c| BaseElem::UnKnownElem(UnKnownBranch { contents: c }))
+                            .collect();
+                        rlist.extend(grouup_tmp);
+                    }
+                    group.clear()
+                }
+            }
+            // match inner {
+            //     BaseElem::UnKnownElem(e) => {}
+            //     _ => {
+            //         //
+            //     }
+            // }
+        }
+        return Ok(rlist);
+    }
+
+    fn grouoping_operator(&self, codelist: Vec<BaseElem>) -> Result<Vec<BaseElem>, &str> {
+        todo!()
+    }
 }
 
 impl Parser<'_> for ExprParser {
@@ -40,6 +126,7 @@ impl Parser<'_> for ExprParser {
         }
     }
 
+    /// the function that groups token
     fn code2vec(&self, code: &Vec<BaseElem>) -> Result<Vec<BaseElem>, &str> {
         // -----    macro   -----
         /// # err_proc

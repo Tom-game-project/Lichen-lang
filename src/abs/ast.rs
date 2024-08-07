@@ -1,5 +1,5 @@
 use crate::token::{
-    block::BlockBranch, func::FuncBranch, list_block::ListBlockBranch,
+    block::BlockBranch, func::FuncBranch, list_block::ListBlockBranch, operator::OperatorBranch,
     paren_block::ParenBlockBranch, string::StringBranch, syntax::SyntaxBranch,
     syntax_box::SyntaxBoxBranch, unknown::UnKnownBranch, word::WordBranch,
 };
@@ -18,6 +18,7 @@ pub enum BaseElem {
     // without ASTAreaBranch trait structures
     StringElem(StringBranch),
     WordElem(WordBranch),
+    OpeElem(OperatorBranch),
     UnKnownElem(UnKnownBranch),
 }
 
@@ -33,6 +34,7 @@ impl BaseElem {
             BaseElem::SyntaxElem(e) => e.show(),
             BaseElem::SyntaxBoxElem(e) => e.show(),
             BaseElem::FuncElem(e) => e.show(),
+            BaseElem::OpeElem(e) => e.show(),
         }
     }
 
@@ -49,6 +51,7 @@ impl BaseElem {
             // unrecursive analysis elements
             BaseElem::StringElem(_) => return Ok("Ok"),
             BaseElem::WordElem(_) => return Ok("Ok"),
+            BaseElem::OpeElem(_) => return Ok("Ok"),
             BaseElem::UnKnownElem(_) => return Ok("Ok"),
         }
     }

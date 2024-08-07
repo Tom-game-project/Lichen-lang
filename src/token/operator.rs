@@ -7,20 +7,8 @@ pub struct OperatorBranch {
     pub depth: isize,
 }
 
-/// # StringBranch
-#[derive(Clone)]
-pub struct StringBranch {
-    pub contents: String,
-    pub depth: isize,
-}
-
-impl ASTBranch for StringBranch {
+impl ASTBranch for OperatorBranch {
     fn show(&self) {
-        println!("String ({})", self.contents);
-        println!(
-            "{}String ({})",
-            " ".repeat(self.depth as usize),
-            self.contents
-        );
+        println!("Operator {}({})", self.depth, self.ope);
     }
 }
