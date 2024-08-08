@@ -7,48 +7,113 @@ use crate::token::{
 /// # Parser trait
 /// パーサのコア実装
 pub trait Parser<'a> {
+    // operators
+    const OR: &'a str = "||";
+    const AND: &'a str = "&&";
+    const EQ: &'a str = "==";
+    const NE: &'a str = "!=";
+    const LT: &'a str = "<";
+    const LE: &'a str = "<=";
+    const GT: &'a str = ">";
+    const GE: &'a str = ">=";
+    const ADD: &'a str = "+";
+    const SUB: &'a str = "-";
+    const MUL: &'a str = "*";
+    const DIV: &'a str = "/";
+    const MOD: &'a str = "%";
+    const DOT: &'a str = "@";
+
+    const ASSIGNMENT: &'a str = "=";
+    const ADDEQ: &'a str = "+=";
+    const SUBEQ: &'a str = "-=";
+    const MULEQ: &'a str = "*=";
+    const DIVEQ: &'a str = "/=";
+    const MODEQ: &'a str = "%=";
+
+    const POW: &'a str = "**";
+    const NOT: &'a str = "!";
+
     const LEFT_PRIORITY_LIST: [(&'a str, isize); 14] = [
-        ("||", -3),
-        ("&&", -2),
+        (Self::OR, -3),  // ||
+        (Self::AND, -2), // &&
         // PRIORITY 0
-        ("==", 0),
-        ("!=", 0),
-        ("<", 0),
-        (">", 0),
-        (">=", 0),
-        ("<=", 0),
+        (Self::EQ, 0), // ==
+        (Self::NE, 0), // !=
+        (Self::LT, 0), // <
+        (Self::LE, 0), // <=
+        (Self::GT, 0), // >
+        (Self::GE, 0), // >=
         // PRIORITY 1
-        ("+", 1),
-        ("-", 1),
+        (Self::ADD, 1), // +
+        (Self::SUB, 1), // -
         // PRIORITY 2
-        ("*", 2),
-        ("/", 2),
-        ("%", 2),
-        ("@", 2),
+        (Self::MUL, 2), // *
+        (Self::DIV, 2), // /
+        (Self::MOD, 2), // %
+        (Self::DOT, 2), // @
     ];
     const RIGHT_PRIORITY_LIST: [(&'a str, isize); 7] = [
         // PRIORITY -4
-        ("=", -4),
-        ("+=", -4),
-        ("-=", -4),
-        ("*=", -4),
-        ("/=", -4),
-        ("%=", -4),
-        ("**", 3),
+        (Self::ASSIGNMENT, -4), // =
+        (Self::ADDEQ, -4),      // +=
+        (Self::SUBEQ, -4),      // -=
+        (Self::MULEQ, -4),      // *=
+        (Self::DIVEQ, -4),      // /=
+        (Self::MODEQ, -4),      // %=
+        (Self::POW, 3),         // **
     ];
     const PREFIX_PRIORITY_LIST: [(&'a str, isize); 1] = [
         // PRIORITY -1
-        ("!", -1),
+        (Self::NOT, -1), // !
     ];
     const SPLIT_CHAR: [char; 3] = [' ', '\t', '\n'];
     const EXCLUDE_WORDS: [&'a str; 3] = [";", ":", ","];
-    const SYNTAX_WORDS: [&'a str; 7] = ["if", "elif", "else", "loop", "for", "while", "match"];
-    const SYNTAX_WORDS_HEADS: [&'a str; 4] = ["if", "loop", "for", "while"];
+
+    const SYNTAX_IF: &'a str = "if";
+    const SYNTAX_ELIF: &'a str = "elif";
+    const SYNTAX_ELSE: &'a str = "else";
+    const SYNTAX_LOOP: &'a str = "loop";
+    const SYNTAX_FOR: &'a str = "for";
+    const SYNTAX_WHILE: &'a str = "while";
+    const SYNTAX_MATCH: &'a str = "match";
+
+    const SYNTAX_WORDS: [&'a str; 7] = [
+        Self::SYNTAX_IF,    // if
+        Self::SYNTAX_ELIF,  // elif
+        Self::SYNTAX_ELSE,  // else
+        Self::SYNTAX_LOOP,  // loop
+        Self::SYNTAX_FOR,   // for
+        Self::SYNTAX_WHILE, // while
+        Self::SYNTAX_MATCH, // match
+    ];
+    const SYNTAX_WORDS_HEADS: [&'a str; 4] = [
+        Self::SYNTAX_IF,    // if
+        Self::SYNTAX_LOOP,  // loop
+        Self::SYNTAX_FOR,   // for
+        Self::SYNTAX_WHILE, // while
+    ];
     const ESCAPECHAR: char = '\\';
     const FUNCTION: &'a str = "fn";
     const SEMICOLON: char = ';';
 
-    const CONTROL_STATEMENT: [&'a str; 4] = ["return", "break", "continue", "assert"];
+    const CONTROL_RETURN: &'a str = "return";
+    const CONTROL_BREAK: &'a str = "break";
+    const CONTROL_CONTINUE: &'a str = "continue";
+    const CONTROL_ASSERT: &'a str = "assert";
+
+    const CONTROL_STATEMENT: [&'a str; 4] = [
+        Self::CONTROL_RETURN,   // return
+        Self::CONTROL_BREAK,    // break
+        Self::CONTROL_CONTINUE, // continue
+        Self::CONTROL_ASSERT,   // assert
+    ];
+
+    const BLOCK_BRACE_OPEN: char = '{';
+    const BLOCK_BRACE_CLOSE: char = '}';
+    const BLOCK_PAREN_OPEN: char = '(';
+    const BLOCK_PAREN_CLOSE: char = ')';
+    const BLOCK_LIST_OPEN: char = '[';
+    const BLOCK_LIST_CLOSE: char = ']';
 
     fn new(code: String, depth: isize, loopdepth: isize) -> Self;
     fn resolve(&self) -> Result<Vec<BaseElem>, String>;

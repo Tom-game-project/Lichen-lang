@@ -98,7 +98,11 @@ impl ExprParser {
     }
 
     fn grouoping_operator(&self, codelist: Vec<BaseElem>) -> Result<Vec<BaseElem>, &str> {
-        todo!()
+        //
+        let mut rlist: Vec<BaseElem> = Vec::new();
+        Self::LEFT_PRIORITY_LIST;
+
+        return Ok(rlist);
     }
 }
 
@@ -147,10 +151,24 @@ impl Parser<'_> for ExprParser {
         // ----- start code -----
         let mut code_list;
         code_list = err_proc!(self.grouping_quotation(code.to_vec()));
-        code_list = err_proc!(self.grouping_elements(code_list, BaseElem::BlockElem, '{', '}'));
-        code_list = err_proc!(self.grouping_elements(code_list, BaseElem::ListBlockElem, '[', ']'));
-        code_list =
-            err_proc!(self.grouping_elements(code_list, BaseElem::ParenBlockElem, '(', ')'));
+        code_list = err_proc!(self.grouping_elements(
+            code_list,
+            BaseElem::BlockElem,
+            Self::BLOCK_BRACE_OPEN,  // {
+            Self::BLOCK_BRACE_CLOSE  // }
+        ));
+        code_list = err_proc!(self.grouping_elements(
+            code_list,
+            BaseElem::ListBlockElem,
+            Self::BLOCK_LIST_OPEN,  // [
+            Self::BLOCK_LIST_CLOSE  // ]
+        ));
+        code_list = err_proc!(self.grouping_elements(
+            code_list,
+            BaseElem::ParenBlockElem,
+            Self::BLOCK_PAREN_OPEN,  // (
+            Self::BLOCK_PAREN_CLOSE  // )
+        ));
         code_list =
             err_proc!(self.grouping_word(code_list, vec![' ', '\t', '\n'], vec![',', ';', ':']));
         return Ok(code_list);
