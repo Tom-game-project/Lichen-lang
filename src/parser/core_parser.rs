@@ -66,6 +66,33 @@ pub trait Parser<'a> {
         // PRIORITY -1
         (Self::NOT, -1), // !
     ];
+
+    /// 演算子を文字列として長いものからの順番で並べたもの
+    const LENGTH_ORDER_OPE_LIST: [&'a str; 22] = [
+        Self::OR,         // ||
+        Self::AND,        // &&
+        Self::EQ,         // ==
+        Self::NE,         // !=
+        Self::LE,         // <=
+        Self::GE,         // >=
+        Self::ADDEQ,      // +=
+        Self::SUBEQ,      // -=
+        Self::MULEQ,      // *=
+        Self::DIVEQ,      // /=
+        Self::MODEQ,      // %=
+        Self::POW,        // **
+        Self::LT,         // <
+        Self::GT,         // >
+        Self::ADD,        // +
+        Self::SUB,        // -
+        Self::MUL,        // *
+        Self::DIV,        // /
+        Self::MOD,        // %
+        Self::DOT,        // @
+        Self::ASSIGNMENT, // =
+        Self::NOT,        // !
+    ];
+
     const SPLIT_CHAR: [char; 3] = [' ', '\t', '\n'];
     const EXCLUDE_WORDS: [&'a str; 3] = [";", ":", ","];
 

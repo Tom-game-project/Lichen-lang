@@ -97,11 +97,15 @@ impl ExprParser {
         return Ok(rlist);
     }
 
+    /// 演算子を文字列として長いものからの順番で調べる
     fn grouoping_operator(&self, codelist: Vec<BaseElem>) -> Result<Vec<BaseElem>, &str> {
-        //
-        let mut rlist: Vec<BaseElem> = Vec::new();
-        Self::LEFT_PRIORITY_LIST;
-
+        let mut rlist: Vec<BaseElem> = codelist;
+        for ope in Self::LENGTH_ORDER_OPE_LIST {
+            rlist = match self.grouoping_operator_unit(rlist, ope.to_string()) {
+                Ok(v) => v,
+                Err(e) => return Err(e),
+            }
+        }
         return Ok(rlist);
     }
 }
@@ -169,6 +173,7 @@ impl Parser<'_> for ExprParser {
             Self::BLOCK_PAREN_OPEN,  // (
             Self::BLOCK_PAREN_CLOSE  // )
         ));
+        code_list = err_proc!(self.grouoping_operator(code_list));
         code_list =
             err_proc!(self.grouping_word(code_list, vec![' ', '\t', '\n'], vec![',', ';', ':']));
         return Ok(code_list);
