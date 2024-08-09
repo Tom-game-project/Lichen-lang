@@ -143,7 +143,7 @@ pub trait Parser<'a> {
     const BLOCK_LIST_CLOSE: char = ']';
 
     fn new(code: String, depth: isize, loopdepth: isize) -> Self;
-    fn resolve(&self) -> Result<Vec<BaseElem>, String>;
+    fn resolve(&self) -> Result<Vec<BaseElem>, &str>;
     fn code2vec(&self, code: &Vec<BaseElem>) -> Result<Vec<BaseElem>, &str>;
     fn get_depth(&self) -> isize;
     fn get_loopdepth(&self) -> isize;

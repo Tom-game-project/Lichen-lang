@@ -119,7 +119,7 @@ impl Parser<'_> for ExprParser {
         }
     }
 
-    fn resolve(&self) -> Result<Vec<BaseElem>, String> {
+    fn resolve(&self) -> Result<Vec<BaseElem>, &str> {
         let code_list_data = self.code2_vec_pre_proc_func(&self.code);
         let code_list = self.code2vec(&code_list_data);
         match code_list {
@@ -134,7 +134,7 @@ impl Parser<'_> for ExprParser {
                 return Ok(v);
             }
             Err(e) => {
-                return Err(String::from(e));
+                return Err(e);
             }
         }
     }
