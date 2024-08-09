@@ -24,6 +24,17 @@ impl StateParser {
             loopdepth: loopdepth,
         }
     }
+    pub fn resolve2(&mut self) -> Result<(), ParserError> {
+        self.code_list = self.code2_vec_pre_proc_func(&self.code);
+        if let Err(e) = self.code2vec2() {
+            return Err(e);
+        } else {
+            for i in &mut self.code_list {
+                i.resolve_self();
+            }
+            return Ok(());
+        }
+    }
 
     fn grouping_quotation2(&mut self) -> Result<(), ParserError> {
         let mut open_flag = false;
