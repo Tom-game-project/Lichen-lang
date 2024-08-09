@@ -2,6 +2,7 @@ use crate::abs::ast::*;
 use crate::parser::core_parser::*;
 use crate::parser::parser_errors::ParserError;
 use crate::token::string::StringBranch;
+use crate::token::word::WordBranch;
 
 pub struct StateParser {
     // TODO: 一時的にpublicにしているだけ
@@ -24,13 +25,16 @@ impl StateParser {
             loopdepth: loopdepth,
         }
     }
+
     pub fn resolve2(&mut self) -> Result<(), ParserError> {
         self.code_list = self.code2_vec_pre_proc_func(&self.code);
         if let Err(e) = self.code2vec2() {
             return Err(e);
         } else {
             for i in &mut self.code_list {
-                i.resolve_self();
+                if let Err(e) = i.resolve_self() {
+                    return Err(e);
+                }
             }
             return Ok(());
         }
@@ -48,7 +52,8 @@ impl StateParser {
                     group.push(v.contents);
                     escape_flag = false
                 } else {
-                    if v.contents == '"'
+                    if v.contents == Self::DOUBLE_QUOTATION
+                    // '"'
                     // is quochar
                     {
                         if open_flag {
@@ -65,7 +70,10 @@ impl StateParser {
                         }
                     } else {
                         if open_flag {
-                            if v.contents == '\\' {
+                            if v.contents == Self::ESCAPECHAR
+                            // '\'
+                            // is escape
+                            {
                                 escape_flag = true;
                             } else {
                                 escape_flag = false;
@@ -151,6 +159,54 @@ impl StateParser {
         return Ok(());
     }
 
+    fn grouping_words2(&mut self) -> Result<(), ParserError> {
+        let mut rlist: Vec<BaseElem> = Vec::new();
+        let mut group: String = String::new();
+
+        for inner in &self.code_list {
+            if let BaseElem::UnKnownElem(ref e) = inner {
+                if Self::SPLIT_CHAR.contains(&e.contents)
+                // inner in split
+                {
+                    if !group.is_empty() {
+                        rlist.push(BaseElem::WordElem(WordBranch {
+                            contents: group.clone(),
+                        }));
+                        group.clear();
+                    }
+                } else if Self::EXCLUDE_WORDS.contains(&e.contents)
+                // inner in split
+                {
+                    if !group.is_empty() {
+                        rlist.push(BaseElem::WordElem(WordBranch {
+                            contents: group.clone(),
+                        }));
+                        group.clear();
+                    }
+                    rlist.push(inner.clone());
+                } else {
+                    group.push(e.contents);
+                }
+            } else {
+                if !group.is_empty() {
+                    rlist.push(BaseElem::WordElem(WordBranch {
+                        contents: group.clone(),
+                    }));
+                    group.clear();
+                }
+                rlist.push(inner.clone());
+            }
+        }
+        if !group.is_empty() {
+            rlist.push(BaseElem::WordElem(WordBranch {
+                contents: group.clone(),
+            }));
+            group.clear();
+        }
+        self.code_list = rlist;
+        return Ok(());
+    }
+
     pub fn code2vec2(&mut self) -> Result<(), ParserError> {
         // --- macro ---
         macro_rules! err_proc {
@@ -161,6 +217,7 @@ impl StateParser {
             };
         }
         err_proc!(self.grouping_quotation2());
+        err_proc!(self.grouping_words2());
         err_proc!(self.grouping_elements2(
             BaseElem::BlockElem,
             Self::BLOCK_BRACE_OPEN,  // {

@@ -94,7 +94,7 @@ pub trait Parser<'a> {
     ];
 
     const SPLIT_CHAR: [char; 3] = [' ', '\t', '\n'];
-    const EXCLUDE_WORDS: [&'a str; 3] = [";", ":", ","];
+    const EXCLUDE_WORDS: [char; 3] = [';', ':', ','];
 
     const SYNTAX_IF: &'a str = "if";
     const SYNTAX_ELIF: &'a str = "elif";
@@ -122,6 +122,8 @@ pub trait Parser<'a> {
     const ESCAPECHAR: char = '\\';
     const FUNCTION: &'a str = "fn";
     const SEMICOLON: char = ';';
+    const DOUBLE_QUOTATION: char = '"';
+    const SINGLE_QUOTATION: char = '\'';
 
     const CONTROL_RETURN: &'a str = "return";
     const CONTROL_BREAK: &'a str = "break";
