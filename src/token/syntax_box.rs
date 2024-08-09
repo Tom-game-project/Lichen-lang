@@ -18,12 +18,6 @@ impl ASTBranch for SyntaxBoxBranch {
     }
 }
 
-impl ASTAreaBranch for SyntaxBoxBranch {
-    fn new(contents: Option<Vec<BaseElem>>, depth: isize, loopdepth: isize) -> Self {
-        todo!()
-    }
-}
-
 impl RecursiveAnalysisElements for SyntaxBoxBranch {
     fn resolve_self(&mut self) -> Result<(), ParserError> {
         todo!()
