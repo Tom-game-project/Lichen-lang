@@ -3,7 +3,10 @@ use crate::parser::parser_errors::ParserError;
 use crate::token::paren_block::ParenBlockBranch;
 
 /// # FuncBranch
-/// 関数宣言を探す
+/// 関数呼び出しのトークン
+/// ```
+/// f(args)
+/// ```
 #[derive(Clone)]
 pub struct FuncBranch {
     pub name: Box<BaseElem>,

@@ -1,4 +1,6 @@
 use crate::abs::ast::*;
+use crate::parser;
+use crate::parser::expr_parser::ExprParser;
 use crate::parser::parser_errors::ParserError;
 
 /// #ParenBlockBranch
@@ -11,10 +13,35 @@ use crate::parser::parser_errors::ParserError;
 /// 実装する
 #[derive(Clone)]
 pub struct ParenBlockBranch {
-    pub code_list: Vec<BaseElem>,
     pub contents: Option<Vec<BaseElem>>,
     pub depth: isize,
     pub loopdepth: isize,
+}
+
+impl RecursiveAnalysisElements for ParenBlockBranch {
+    fn resolve_self(&mut self) -> Result<(), ParserError> {
+        // 式パーサーによって解析
+        if let Some(a) = &self.contents {
+            let mut parser =
+                ExprParser::create_parser_from_vec(a.to_vec(), self.depth + 1, self.loopdepth);
+            match parser.code2vec2() {
+                Ok(_) => {
+                    let mut rlist = parser.code_list;
+                    for i in &mut rlist {
+                        if let Err(e) = i.resolve_self() {
+                            return Err(e);
+                        }
+                    }
+                    self.contents = Some(rlist);
+                    return Ok(());
+                }
+                Err(e) => {
+                    return Err(e);
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 impl ASTBranch for ParenBlockBranch {
@@ -36,21 +63,9 @@ impl ASTBranch for ParenBlockBranch {
 impl ASTAreaBranch for ParenBlockBranch {
     fn new(contents: Option<Vec<BaseElem>>, depth: isize, loopdepth: isize) -> Self {
         Self {
-            code_list: Vec::new(),
             contents: contents,
             depth: depth,
             loopdepth: loopdepth,
         }
-    }
-}
-
-impl RecursiveAnalysisElements for ParenBlockBranch {
-    fn resolve_self(&mut self) -> Result<(), ParserError> {
-        for inner in &mut self.code_list {
-            if let Err(e) = inner.resolve_self() {
-                return Err(e);
-            }
-        }
-        Ok(())
     }
 }

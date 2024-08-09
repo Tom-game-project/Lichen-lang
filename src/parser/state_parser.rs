@@ -24,6 +24,7 @@ impl StateParser {
             loopdepth: loopdepth,
         }
     }
+
     fn grouping_quotation2(&mut self) -> Result<(), ParserError> {
         let mut open_flag = false;
         let mut escape_flag = false;

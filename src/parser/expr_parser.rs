@@ -1,21 +1,179 @@
-use std::vec;
-
 use crate::abs::ast::*;
 use crate::parser::core_parser::*;
 
 use crate::token::operator::OperatorBranch;
+use crate::token::string::StringBranch;
 use crate::token::syntax::SyntaxBranch;
 use crate::token::syntax_box::SyntaxBoxBranch;
 use crate::token::unknown::UnKnownBranch;
 
+use super::parser_errors::ParserError;
+
 pub struct ExprParser {
     // TODO: 一時的にpublicにしているだけ
     pub code: String,
+    pub code_list: Vec<BaseElem>,
     pub depth: isize,
     pub loopdepth: isize,
 }
 
 impl ExprParser {
+    pub fn create_parser_from_vec(
+        code_list: Vec<BaseElem>,
+        depth: isize,
+        loopdepth: isize,
+    ) -> Self {
+        Self {
+            code: String::new(),
+            code_list: code_list,
+            depth: depth,
+            loopdepth: loopdepth,
+        }
+    }
+
+    fn grouping_quotation2(&mut self) -> Result<(), ParserError> {
+        let mut open_flag = false;
+        let mut escape_flag = false;
+        let mut rlist = Vec::new();
+        let mut group = String::new();
+
+        for inner in &self.code_list {
+            if let BaseElem::UnKnownElem(ref v) = inner {
+                if escape_flag {
+                    group.push(v.contents);
+                    escape_flag = false
+                } else {
+                    if v.contents == '"'
+                    // is quochar
+                    {
+                        if open_flag {
+                            group.push(v.contents);
+                            rlist.push(BaseElem::StringElem(StringBranch {
+                                contents: group.clone(),
+                                depth: self.get_depth(),
+                            }));
+                            group.clear();
+                            open_flag = false;
+                        } else {
+                            group.push(v.contents);
+                            open_flag = true;
+                        }
+                    } else {
+                        if open_flag {
+                            if v.contents == '\\' {
+                                escape_flag = true;
+                            } else {
+                                escape_flag = false;
+                            }
+                            group.push(v.contents);
+                        } else {
+                            rlist.push(inner.clone());
+                        }
+                    }
+                }
+            } else {
+                rlist.push(inner.clone());
+            }
+        }
+        if open_flag {
+            return Err(ParserError::QuotationNotClosed);
+        }
+        self.code_list = rlist;
+        return Ok(());
+    }
+
+    fn grouping_elements2<T>(
+        &mut self,
+        elemtype: fn(T) -> BaseElem,
+        open_char: char,
+        close_char: char,
+    ) -> Result<(), ParserError>
+    where
+        T: ASTAreaBranch,
+    {
+        let mut rlist: Vec<BaseElem> = Vec::new();
+        let mut group: Vec<BaseElem> = Vec::new();
+        let mut depth: isize = 0;
+
+        for inner in &self.code_list {
+            if let BaseElem::UnKnownElem(ref b) = inner {
+                if b.contents == open_char {
+                    if depth > 0 {
+                        group.push(inner.clone());
+                    } else if depth == 0 {
+                        // pass
+                    } else {
+                        return Err(ParserError::Uncategorized);
+                    }
+                    depth += 1;
+                } else if b.contents == close_char {
+                    depth -= 1;
+                    if depth > 0 {
+                        group.push(inner.clone());
+                    } else if depth == 0 {
+                        rlist.push(elemtype(ASTAreaBranch::new(
+                            Some(group.clone()),
+                            self.get_depth(),
+                            self.get_loopdepth(),
+                        )));
+                        group.clear();
+                    } else {
+                        return Err(ParserError::Uncategorized);
+                    }
+                } else {
+                    if depth > 0 {
+                        group.push(inner.clone());
+                    } else if depth == 0 {
+                        rlist.push(inner.clone());
+                    } else {
+                        return Err(ParserError::Uncategorized);
+                    }
+                }
+            } else {
+                if depth > 0 {
+                    group.push(inner.clone());
+                } else if depth == 0 {
+                    rlist.push(inner.clone());
+                } else {
+                    return Err(ParserError::BraceNotClosed);
+                }
+            }
+        }
+        if depth != 0 {
+            return Err(ParserError::BraceNotClosed);
+        }
+        self.code_list = rlist;
+        return Ok(());
+    }
+
+    pub fn code2vec2(&mut self) -> Result<(), ParserError> {
+        if let Err(e) = self.grouping_quotation2() {
+            return Err(e);
+        }
+        if let Err(e) = self.grouping_elements2(
+            BaseElem::BlockElem,
+            Self::BLOCK_BRACE_OPEN,  // {
+            Self::BLOCK_BRACE_CLOSE, // }
+        ) {
+            return Err(e);
+        }
+        if let Err(e) = self.grouping_elements2(
+            BaseElem::ListBlockElem,
+            Self::BLOCK_LIST_OPEN,  // [
+            Self::BLOCK_LIST_CLOSE, // ]
+        ) {
+            return Err(e);
+        }
+        if let Err(e) = self.grouping_elements2(
+            BaseElem::ParenBlockElem,
+            Self::BLOCK_PAREN_OPEN,  // (
+            Self::BLOCK_PAREN_CLOSE, // )
+        ) {
+            return Err(e);
+        }
+        return Ok(());
+    }
+
     /// 演算子をまとめる
     /// 演算子が長いものから順番にまとめていく必要がある
     /// 例えば、
@@ -113,6 +271,7 @@ impl ExprParser {
 impl Parser<'_> for ExprParser {
     fn new(code: String, depth: isize, loopdepth: isize) -> Self {
         Self {
+            code_list: Vec::new(),
             code: code,
             depth: depth,
             loopdepth: loopdepth,
