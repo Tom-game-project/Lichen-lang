@@ -34,10 +34,10 @@ impl ASTAreaBranch for ListBlockBranch {
         }
     }
 
-    fn resolve_self(&mut self) -> Result<&str, String> {
-        //todo!();
-        // TODO:impl list parser
-        // TODO:impl slice parser
-        return Ok("Ok!");
-    }
+    // fn resolve_self(&mut self) -> Result<&str, String> {
+    //     //todo!();
+    //     // TODO:impl list parser
+    //     // TODO:impl slice parser
+    //     return Ok("Ok!");
+    // }
 }

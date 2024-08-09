@@ -26,7 +26,7 @@ impl ASTAreaBranch for SyntaxBranch {
         todo!()
     }
 
-    fn resolve_self(&mut self) -> Result<&str, String> {
-        todo!()
-    }
+    // fn resolve_self(&mut self) -> Result<&str, String> {
+    //     todo!()
+    // }
 }

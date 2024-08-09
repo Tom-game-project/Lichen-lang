@@ -4,6 +4,8 @@ use crate::token::{
     syntax_box::SyntaxBoxBranch, unknown::UnKnownBranch, word::WordBranch,
 };
 
+use crate::parser::parser_errors::ParserError;
+
 /// # BaseElem
 /// 抽象的なtoken
 /// プログラムの要素を表現できる
@@ -38,7 +40,7 @@ impl BaseElem {
         }
     }
 
-    pub fn resolve_self(&mut self) -> Result<&str, String> {
+    pub fn resolve_self(&mut self) -> Result<(), ParserError> {
         match self {
             // recursive analysis elements
             BaseElem::BlockElem(e) => return e.resolve_self(),
@@ -49,10 +51,10 @@ impl BaseElem {
             BaseElem::FuncElem(e) => return e.resolve_self(),
 
             // unrecursive analysis elements
-            BaseElem::StringElem(_) => return Ok("Ok"),
-            BaseElem::WordElem(_) => return Ok("Ok"),
-            BaseElem::OpeElem(_) => return Ok("Ok"),
-            BaseElem::UnKnownElem(_) => return Ok("Ok"),
+            BaseElem::StringElem(_) => return Ok(()),
+            BaseElem::WordElem(_) => return Ok(()),
+            BaseElem::OpeElem(_) => return Ok(()),
+            BaseElem::UnKnownElem(_) => return Ok(()),
         }
     }
 }
@@ -69,9 +71,9 @@ pub trait ASTBranch {
 /// depthをインクリメントするときは、`resolve_self`内で宣言するParserにself.get_depth + 1をして実装する必要がある
 pub trait ASTAreaBranch {
     fn new(contents: Option<Vec<BaseElem>>, depth: isize, loopdepth: isize) -> Self;
-    fn resolve_self(&mut self) -> Result<&str, String>;
+    // fn resolve_self(&mut self) -> Result<&str, String>;
 }
 
 pub trait RecursiveAnalysisElements {
-    fn resolve_self(&mut self) -> Result<&str, &str>;
+    fn resolve_self(&mut self) -> Result<(), ParserError>;
 }

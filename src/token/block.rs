@@ -1,6 +1,6 @@
 use crate::abs::ast::*;
 
-use crate::parser::core_parser::*;
+use crate::parser::parser_errors::ParserError;
 use crate::parser::state_parser::*;
 
 /// # BlockBranch
@@ -14,6 +14,33 @@ pub struct BlockBranch {
     pub loopdepth: isize,
 }
 
+impl RecursiveAnalysisElements for BlockBranch {
+    fn resolve_self(&mut self) -> Result<(), ParserError> {
+        if let Some(a) = &self.contents {
+            // let parser = StateParser::new(String::from(""), self.depth + 1, self.loopdepth);
+            let mut parser =
+                StateParser::create_parser_from_vec(a.to_vec(), self.depth + 1, self.loopdepth);
+            match parser.code2vec2() {
+                Ok(_) => {
+                    let mut rlist = parser.code_list;
+                    for i in &mut rlist {
+                        if let Err(e) = i.resolve_self() {
+                            return Err(e);
+                        }
+                    }
+                    self.contents = Some(rlist);
+                    return Ok(());
+                }
+                Err(e) => {
+                    return Err(e);
+                }
+            }
+        } else {
+            return Ok(());
+        }
+    }
+}
+
 impl ASTAreaBranch for BlockBranch {
     fn new(contents: Option<Vec<BaseElem>>, depth: isize, loopdepth: isize) -> Self {
         Self {
@@ -23,30 +50,32 @@ impl ASTAreaBranch for BlockBranch {
         }
     }
 
-    fn resolve_self(&mut self) -> Result<&str, String> {
-        if let Some(a) = &self.contents {
-            let parser = StateParser::new(String::from(""), self.depth + 1, self.loopdepth);
-            match parser.code2vec(&a) {
-                Ok(v) => {
-                    let mut rlist = v.to_vec();
-                    for i in &mut rlist {
-                        match i.resolve_self() {
-                            Ok(_) => { /* pass */ }
-                            Err(_) => { /* pass */ }
-                        };
-                    }
-                    self.contents = Some(rlist);
-                    return Ok("OK!");
-                }
-                Err(e) => {
-                    // println!("{}",e);
-                    return Err(String::from(e));
-                }
-            }
-        } else {
-            return Ok("Empty");
-        }
-    }
+    // fn resolve_self(&mut self) -> Result<&str, ParserError> {
+    //     if let Some(a) = &self.contents {
+    //         // let parser = StateParser::new(String::from(""), self.depth + 1, self.loopdepth);
+    //         let mut parser =
+    //             StateParser::create_parser_from_vec(a.to_vec(), self.depth + 1, self.loopdepth);
+    //         match parser.code2vec2() {
+    //             Ok(v) => {
+    //                 let mut rlist = parser.code_list;
+    //                 for i in &mut rlist {
+    //                     match i.resolve_self() {
+    //                         Ok(_) => { /* pass */ }
+    //                         Err(_) => { /* pass */ }
+    //                     };
+    //                 }
+    //                 self.contents = Some(rlist);
+    //                 return Ok("OK!");
+    //             }
+    //             Err(e) => {
+    //                 // println!("{}",e);
+    //                 return Err(e);
+    //             }
+    //         }
+    //     } else {
+    //         return Ok("Empty");
+    //     }
+    // }
 }
 
 impl ASTBranch for BlockBranch {

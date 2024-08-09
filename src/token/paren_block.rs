@@ -38,10 +38,10 @@ impl ASTAreaBranch for ParenBlockBranch {
             loopdepth: loopdepth,
         }
     }
-    fn resolve_self(&mut self) -> Result<&str, String> {
-        // TODO: impl expr parser
-        // TODO: impl args parser
-        // TODO: impl tuple parser
-        return Ok("Ok!");
-    }
+    // fn resolve_self(&mut self) -> Result<&str, String> {
+    //     // TODO: impl expr parser
+    //     // TODO: impl args parser
+    //     // TODO: impl tuple parser
+    //     return Ok("Ok!");
+    // }
 }

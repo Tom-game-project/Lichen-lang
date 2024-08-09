@@ -22,7 +22,7 @@ impl ASTAreaBranch for SyntaxBoxBranch {
         todo!()
     }
 
-    fn resolve_self(&mut self) -> Result<&str, String> {
-        todo!()
-    }
+    // fn resolve_self(&mut self) -> Result<&str, String> {
+    //     todo!()
+    // }
 }

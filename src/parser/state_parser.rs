@@ -12,6 +12,18 @@ pub struct StateParser {
 }
 
 impl StateParser {
+    pub fn create_parser_from_vec(
+        code_list: Vec<BaseElem>,
+        depth: isize,
+        loopdepth: isize,
+    ) -> Self {
+        Self {
+            code: String::new(),
+            code_list: code_list,
+            depth: depth,
+            loopdepth: loopdepth,
+        }
+    }
     fn grouping_quotation2(&mut self) -> Result<(), ParserError> {
         let mut open_flag = false;
         let mut escape_flag = false;
@@ -127,7 +139,7 @@ impl StateParser {
         return Ok(());
     }
 
-    fn code2vec2(&mut self) -> Result<(), ParserError> {
+    pub fn code2vec2(&mut self) -> Result<(), ParserError> {
         if let Err(e) = self.grouping_quotation2() {
             return Err(e);
         }
