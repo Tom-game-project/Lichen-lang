@@ -1,4 +1,6 @@
 use crate::abs::ast::*;
+use crate::parser::parser_errors::ParserError;
+
 /// #ParenBlockBranch
 /// `()`を使用したプログラムにおけるデータを格納するstruct
 /// 中では,
@@ -9,6 +11,7 @@ use crate::abs::ast::*;
 /// 実装する
 #[derive(Clone)]
 pub struct ParenBlockBranch {
+    pub code_list: Vec<BaseElem>,
     pub contents: Option<Vec<BaseElem>>,
     pub depth: isize,
     pub loopdepth: isize,
@@ -33,15 +36,21 @@ impl ASTBranch for ParenBlockBranch {
 impl ASTAreaBranch for ParenBlockBranch {
     fn new(contents: Option<Vec<BaseElem>>, depth: isize, loopdepth: isize) -> Self {
         Self {
+            code_list: Vec::new(),
             contents: contents,
             depth: depth,
             loopdepth: loopdepth,
         }
     }
-    // fn resolve_self(&mut self) -> Result<&str, String> {
-    //     // TODO: impl expr parser
-    //     // TODO: impl args parser
-    //     // TODO: impl tuple parser
-    //     return Ok("Ok!");
-    // }
+}
+
+impl RecursiveAnalysisElements for ParenBlockBranch {
+    fn resolve_self(&mut self) -> Result<(), ParserError> {
+        for inner in &mut self.code_list {
+            if let Err(e) = inner.resolve_self() {
+                return Err(e);
+            }
+        }
+        Ok(())
+    }
 }

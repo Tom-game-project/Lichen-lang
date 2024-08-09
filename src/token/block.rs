@@ -49,33 +49,6 @@ impl ASTAreaBranch for BlockBranch {
             loopdepth: loopdepth,
         }
     }
-
-    // fn resolve_self(&mut self) -> Result<&str, ParserError> {
-    //     if let Some(a) = &self.contents {
-    //         // let parser = StateParser::new(String::from(""), self.depth + 1, self.loopdepth);
-    //         let mut parser =
-    //             StateParser::create_parser_from_vec(a.to_vec(), self.depth + 1, self.loopdepth);
-    //         match parser.code2vec2() {
-    //             Ok(v) => {
-    //                 let mut rlist = parser.code_list;
-    //                 for i in &mut rlist {
-    //                     match i.resolve_self() {
-    //                         Ok(_) => { /* pass */ }
-    //                         Err(_) => { /* pass */ }
-    //                     };
-    //                 }
-    //                 self.contents = Some(rlist);
-    //                 return Ok("OK!");
-    //             }
-    //             Err(e) => {
-    //                 // println!("{}",e);
-    //                 return Err(e);
-    //             }
-    //         }
-    //     } else {
-    //         return Ok("Empty");
-    //     }
-    // }
 }
 
 impl ASTBranch for BlockBranch {

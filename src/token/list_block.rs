@@ -1,4 +1,7 @@
 use crate::abs::ast::*;
+
+use crate::parser::parser_errors::ParserError;
+
 /// #ListBlockBranch
 /// listを格納するためのデータstruct
 /// 中では式を解析するパーサを呼び出す必要がある
@@ -33,11 +36,10 @@ impl ASTAreaBranch for ListBlockBranch {
             loopdepth: loopdepth,
         }
     }
+}
 
-    // fn resolve_self(&mut self) -> Result<&str, String> {
-    //     //todo!();
-    //     // TODO:impl list parser
-    //     // TODO:impl slice parser
-    //     return Ok("Ok!");
-    // }
+impl RecursiveAnalysisElements for ListBlockBranch {
+    fn resolve_self(&mut self) -> Result<(), ParserError> {
+        todo!()
+    }
 }
