@@ -71,3 +71,7 @@ pub trait ASTAreaBranch {
     fn new(contents: Option<Vec<BaseElem>>, depth: isize, loopdepth: isize) -> Self;
     fn resolve_self(&mut self) -> Result<&str, String>;
 }
+
+pub trait RecursiveAnalysisElements {
+    fn resolve_self(&mut self) -> Result<&str, &str>;
+}
