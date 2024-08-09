@@ -97,7 +97,21 @@ pub fn up(a:i32,b:i32):(i32,i32){
     /// 式を正しくIR(中間形式)に変換できるかどうかのテスト
     #[test]
     fn expr_test00() {
-        let code = "myfunc(0,1) + 2 * x";
+        let code = "(10 + 1) + 2 * x";
+        let string_code: String = String::from(code);
+        let e_parser = expr_parser::ExprParser::new(string_code, 0, 0);
+
+        let a = e_parser.resolve(); // 式解釈
+        if let Ok(e) = a {
+            for i in e {
+                i.show()
+            }
+        }
+    }
+
+    #[test]
+    fn expr_test01() {
+        let code = "func(10,1) + 2 * x";
         let string_code: String = String::from(code);
         let e_parser = expr_parser::ExprParser::new(string_code, 0, 0);
 

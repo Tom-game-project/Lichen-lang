@@ -141,30 +141,30 @@ impl StateParser {
     }
 
     pub fn code2vec2(&mut self) -> Result<(), ParserError> {
-        if let Err(e) = self.grouping_quotation2() {
-            return Err(e);
+        // --- macro ---
+        macro_rules! err_proc {
+            ($a:expr) => {
+                if let Err(e) = $a {
+                    return Err(e);
+                }
+            };
         }
-        if let Err(e) = self.grouping_elements2(
+        err_proc!(self.grouping_quotation2());
+        err_proc!(self.grouping_elements2(
             BaseElem::BlockElem,
             Self::BLOCK_BRACE_OPEN,  // {
             Self::BLOCK_BRACE_CLOSE, // }
-        ) {
-            return Err(e);
-        }
-        if let Err(e) = self.grouping_elements2(
+        ));
+        err_proc!(self.grouping_elements2(
             BaseElem::ListBlockElem,
             Self::BLOCK_LIST_OPEN,  // [
             Self::BLOCK_LIST_CLOSE, // ]
-        ) {
-            return Err(e);
-        }
-        if let Err(e) = self.grouping_elements2(
+        ));
+        err_proc!(self.grouping_elements2(
             BaseElem::ParenBlockElem,
             Self::BLOCK_PAREN_OPEN,  // (
             Self::BLOCK_PAREN_CLOSE, // )
-        ) {
-            return Err(e);
-        }
+        ));
         return Ok(());
     }
 }
