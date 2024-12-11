@@ -1,6 +1,7 @@
 // tokens
 use crate::token::block::BlockBranch;
 use crate::token::comment::CommentBranch;
+use crate::token::decfunc::DecFuncBranch;
 use crate::token::func::FuncBranch;
 use crate::token::item::ItemBranch;
 use crate::token::list::ListBranch;
@@ -59,7 +60,10 @@ pub enum ExprElem {
 
 #[derive(Clone, Debug)]
 pub enum TypeElem {
-    PrimitiveElem(PrimitiveBranch),
+    CommentElem(CommentBranch),
+    WordElem(WordBranch),
+    ParenBlockElem(ParenBlockBranch),
+    ListBlockElem(ListBlockBranch),
     TypeBlockElem(TypeBlockBranch),
     UnKnownElem(UnKnownBranch),
 }
@@ -72,6 +76,7 @@ pub enum StmtElem {
     //
     ExprElem(ExprBranch),
     Special(StmtBranch),
+    DefineElem(DecFuncBranch),
     // without RecursiveAnalysisElements trait structures
     StringElem(StringBranch),
     WordElem(WordBranch),
@@ -191,17 +196,23 @@ impl Token for TypeElem {
 
     fn get_show_as_string(&self) -> String {
         match self {
-            TypeElem::PrimitiveElem(e) => e.get_show_as_string(),
+            TypeElem::WordElem(e) => e.get_show_as_string(),
             TypeElem::TypeBlockElem(e) => e.get_show_as_string(),
             TypeElem::UnKnownElem(e) => e.get_show_as_string(),
+            TypeElem::CommentElem(e) => e.get_show_as_string(),
+            TypeElem::ListBlockElem(e) => e.get_show_as_string(),
+            TypeElem::ParenBlockElem(e) => e.get_show_as_string(),
         }
     }
 
     fn show(&self) {
         match self {
-            TypeElem::PrimitiveElem(e) => e.show(),
+            TypeElem::WordElem(e) => e.show(),
             TypeElem::TypeBlockElem(e) => e.show(),
             TypeElem::UnKnownElem(e) => e.show(),
+            TypeElem::CommentElem(e) => e.show(),
+            TypeElem::ListBlockElem(e) => e.show(),
+            TypeElem::ParenBlockElem(e) => e.show(),
         }
     }
 
@@ -221,6 +232,7 @@ impl Token for StmtElem {
             Self::ListBlockElem(e) => e.get_show_as_string(),
             Self::ParenBlockElem(e) => e.get_show_as_string(),
             Self::Special(e) => e.get_show_as_string(),
+            Self::DefineElem(e) => e.get_show_as_string(),
             // without RecursiveAnalysisElements trait structures
             Self::StringElem(e) => e.get_show_as_string(),
             Self::CommentElem(e) => e.get_show_as_string(),
@@ -237,6 +249,7 @@ impl Token for StmtElem {
             Self::ListBlockElem(e) => e.show(),
             Self::ParenBlockElem(e) => e.show(),
             Self::Special(e) => e.show(),
+            Self::DefineElem(e) => e.show(),
             // without RecursiveAnalysisElements trait structures
             Self::StringElem(e) => e.show(),
             Self::CommentElem(e) => e.show(),
@@ -253,7 +266,9 @@ impl Token for StmtElem {
             Self::ListBlockElem(e) => e.resolve_self(),
             Self::ParenBlockElem(e) => e.resolve_self(),
             Self::ExprElem(e) => e.resolve_self(),
+            // Self::DefineElem(e) => 
             Self::Special(e) => e.resolve_self(),
+            Self::DefineElem(e) => e.resolve_self(),
             // without RecursiveAnalysisElements trait structures
             Self::StringElem(_) => Ok(()),
             Self::CommentElem(_) => Ok(()),

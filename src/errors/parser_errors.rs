@@ -11,6 +11,7 @@ pub enum ParserError {
     UnexpectedTypeStmt,
     UnexpectedTypeExpr,
     UnexpectedTypeComma,
+    InvalidFuncSyntax,
     DevError,
     Uncategorized,
 }

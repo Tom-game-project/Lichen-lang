@@ -89,6 +89,11 @@ cargo test --package lichen-lang --test lib -- test_set::stmt_tests::stmt_test01
 cargo test --package lichen-lang --test lib -- test_set::stmt_tests::stmt_test02 --exact --show-output
 ```
 
+### stmt test03
+```bash
+cargo test --package lichen-lang --test lib -- test_set::stmt_tests::stmt_test03 --exact --show-output
+```
+
 ### gen test00
 正しくwasmが生成できるかのテスト
 ```
