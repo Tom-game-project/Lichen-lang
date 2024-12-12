@@ -456,37 +456,7 @@ impl StmtParser {
             match &inner {
                 StmtElem::UnKnownElem(unb) => {
                     if unb.contents == Self::SEMICOLON {
-                        if !group.is_empty() {
-                            if let StmtElem::WordElem(word_b) = &group[0] {
-                                if Self::CONTROL_STATEMENT.contains(&word_b.contents.as_str()) {
-                                    // return 等の
-                                    // 予約語だった場合
-                                    rlist.push(StmtElem::Special(StmtBranch {
-                                        head: word_b.contents.clone(),
-                                        code_list: stmt2expr(&group[1..])?,
-                                        depth: self.depth,
-                                        loopdepth: self.loopdepth,
-                                    }));
-                                } else {
-                                    // 普通の変数のwordだった場合
-                                    rlist.push(StmtElem::ExprElem(ExprBranch {
-                                        code_list: stmt2expr(&group)?,
-                                        depth: self.depth,
-                                        loopdepth: self.loopdepth,
-                                    }));
-                                }
-                            } else {
-                                // 最初の要素がwordではなかった場合
-                                rlist.push(StmtElem::ExprElem(ExprBranch {
-                                    code_list: stmt2expr(&group)?,
-                                    depth: self.depth,
-                                    loopdepth: self.loopdepth,
-                                }));
-                            }
-                        } else {
-                            // group が空だった場合
-                        }
-                        group.clear();
+                        split_semicolon_helper(&mut rlist,&mut group, self.depth, self.loopdepth)?;
                     } else {
                         // セミコロン以外でまだ決定していないchar
                         group.push(inner.clone());
@@ -494,42 +464,19 @@ impl StmtParser {
                 }
                 StmtElem::CommentElem(comment_b) => {
                     // コメントが文の途中で現れたとき
-                    if !group.is_empty() {
-                        if let StmtElem::WordElem(word_b) = &group[0] {
-                            if Self::CONTROL_STATEMENT.contains(&word_b.contents.as_str()) {
-                                // return 等の
-                                // 予約語だった場合
-                                rlist.push(StmtElem::Special(StmtBranch {
-                                    head: word_b.contents.clone(),
-                                    code_list: stmt2expr(&group[1..])?,
-                                    depth: self.depth,
-                                    loopdepth: self.loopdepth,
-                                }));
-                            } else {
-                                // 普通の変数のwordだった場合
-                                rlist.push(StmtElem::ExprElem(ExprBranch {
-                                    code_list: stmt2expr(&group)?,
-                                    depth: self.depth,
-                                    loopdepth: self.loopdepth,
-                                }));
-                            }
-                        } else {
-                            // 最初の要素がwordではなかった場合
-                            rlist.push(StmtElem::ExprElem(ExprBranch {
-                                code_list: stmt2expr(&group)?,
-                                depth: self.depth,
-                                loopdepth: self.loopdepth,
-                            }));
-                        }
-                    } else {
-                        // group が空だった場合
-                    }
-                    group.clear();
+                    split_semicolon_helper(&mut rlist,&mut group, self.depth, self.loopdepth)?;
                     rlist.push(StmtElem::CommentElem(CommentBranch {
                         contents: comment_b.contents.clone(),
                         depth: self.depth,
                         loopdepth: self.loopdepth,
                     }));
+                }
+                StmtElem::DefineElem(deffunc_b) => {
+                    // 関数のマネジメント
+                    split_semicolon_helper(&mut rlist,&mut group, self.depth, self.loopdepth)?;
+                    rlist.push(StmtElem::DefineElem(
+                            deffunc_b.clone()
+                    ));
                 }
                 _ => {
                     group.push(inner.clone());
@@ -621,6 +568,42 @@ fn stmt2type(i: &[StmtElem]) -> Result<Vec<TypeElem>, ParserError> {
     }
     Ok(rlist)
 }
+
+fn split_semicolon_helper(rlist: &mut Vec<StmtElem>,group:&mut Vec<StmtElem>, depth:isize, loopdepth:isize) -> Result<(), ParserError>{
+    if !group.is_empty() {
+        if let StmtElem::WordElem(word_b) = &group[0] {
+            if StmtParser::CONTROL_STATEMENT.contains(&word_b.contents.as_str()) {
+                // return 等の
+                // 予約語だった場合
+                rlist.push(StmtElem::Special(StmtBranch {
+                    head: word_b.contents.clone(),
+                    code_list: stmt2expr(&group[1..])?,
+                    depth: depth,
+                    loopdepth: loopdepth,
+                }));
+            } else {
+                // 普通の変数のwordだった場合
+                rlist.push(StmtElem::ExprElem(ExprBranch {
+                    code_list: stmt2expr(&group)?,
+                    depth: depth,
+                    loopdepth: loopdepth,
+                }));
+            }
+        } else {
+            // 最初の要素がwordではなかった場合
+            rlist.push(StmtElem::ExprElem(ExprBranch {
+                code_list: stmt2expr(&group)?,
+                depth: depth,
+                loopdepth: loopdepth,
+            }));
+        }
+    } else {
+        // group が空だった場合
+    }
+    group.clear();
+    Ok(())
+}
+
 
 impl Parser<'_> for StmtParser {
     fn new(code: String, depth: isize, loopdepth: isize) -> Self {

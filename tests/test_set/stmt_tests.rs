@@ -220,7 +220,7 @@ pub fn stmt_test02() {
 #[test]
 pub fn stmt_test03() {
     let test_cases = ["
-        fn main(a:i32) -> i32{
+        fn main(a:i32) -> i32 {
             print(\"hello world\");
         }
         "];
