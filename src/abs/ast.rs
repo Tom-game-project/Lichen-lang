@@ -225,7 +225,14 @@ impl Token for TypeElem {
     fn resolve_self(&mut self) -> Result<(), ParserError> {
         // resolve_self_as_typeというmethodを呼び出したい
         match self {
-            TypeElem::ParenBlockElem(pb) => pb.resolve_self_as_type(),
+            TypeElem::ParenBlockElem(pb) =>{
+                pb.resolve_self_as_type()
+            },
+            TypeElem::ItemBlockElem(ib) =>{
+                ib.resolve_self_as_type()
+            },
+            TypeElem::WordElem(_wb) => Ok(()),
+            TypeElem::CommentElem(_cb) => Ok(()),
             _ => {
                 // 最終的にこのブロックはなくす
                 todo!()

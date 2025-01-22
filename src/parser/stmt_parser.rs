@@ -326,6 +326,9 @@ impl StmtParser {
                 {
                     if !group.is_empty() {
                         add_rlist!(rlist, group);
+                        // TODO: 除外すべき単語でも、解釈ができなかったものはunknownとして追加する
+                        // ここでtype_parserのgrouping_function関数を参考に書き直して！
+                        // rlist.push(inner.clone())が必要なはず
                         group.clear();
                     }
                     rlist.push(inner.clone());

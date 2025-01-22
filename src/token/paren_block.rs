@@ -56,11 +56,13 @@ impl RecursiveAnalysisTypeElements for ParenBlockBranch {
         // と解釈すれば解決できる
         // その上で、ここには、カンマで木々って解釈しなければならない
         let mut parser = TypeParser::create_parser_from_vec(
-            expr2type(&self.contents)?,
+            self.contents_as_type.clone(),
             0, 0
         );
+        // println!("in_resolve_self_as_type function{:?}", parser.code_list); //すでに消えてる
         parser.code2vec()?;
         // ここで、カンマごとに区切るcode2vecとは別の関数を用意する
+        parser.comma_parser()?;
         let mut rlist = parser.code_list;
         for i in &mut rlist {
             i.resolve_self()?; // 呼び出した先でresolve_self_as_typeが更に呼ばれる
@@ -101,3 +103,14 @@ impl ASTAreaBranch<ExprElem> for ParenBlockBranch {
     }
 }
 
+impl TypeAreaBranch for ParenBlockBranch{
+    fn new(contents: Vec<TypeElem>, depth: isize) -> Self {
+        // println!("contents you want to insert {:?}", contents);
+        Self {
+            contents: Vec::default(),
+            contents_as_type: contents, 
+            depth,
+            loopdepth: 0 
+        }
+    }
+}

@@ -17,8 +17,14 @@ pub struct TypeParser {
 
 impl TypeParser {
     pub fn code2vec(&mut self) -> Result<(), ParserError> {
-        self.grouping_elements(TypeElem::TypeBlockElem, Self::BLOCK_TYPE_OPEN,Self::BLOCK_TYPE_CLOSE)?;
+        self.grouping_elements(TypeElem::TypeBlockElem,
+            Self::BLOCK_TYPE_OPEN,Self::BLOCK_TYPE_CLOSE)?;
+        self.grouping_elements(
+            TypeElem::ParenBlockElem,
+            Self::BLOCK_PAREN_OPEN,
+            Self::BLOCK_PAREN_CLOSE)?;
         self.grouping_words()?;
+        //println!("in code2vec function {:?}", self.code_list);
         Ok(())
     }
 
@@ -29,9 +35,10 @@ impl TypeParser {
         let mut rlist:Vec<TypeElem> = Vec::new();
         let mut group:Vec<TypeElem> = Vec::new();
 
+        // println!("self codelist {:?}",self.code_list);
         for inner in &self.code_list {
             if let TypeElem::UnKnownElem(ub) = inner {
-                if ub.contents == '\'' // TODO: magic number
+                if ub.contents == Self::COMMA
                 {
                     // itemをrlistに追加
                     rlist.push(
@@ -51,7 +58,6 @@ impl TypeParser {
             }
             else 
             {
-                //
                 group.push(inner.clone());
             }
         }
@@ -134,7 +140,7 @@ impl TypeParser {
 
         for inner in &self.code_list {
             if let TypeElem::UnKnownElem(ref e) = inner {
-                if Self::SPLIT_CHAR.contains(&e.contents)
+                if Self::SPLIT_CHAR.contains(&e.contents) 
                 // inner in split
                 {
                     if !group.is_empty() {
@@ -150,6 +156,22 @@ impl TypeParser {
                         group.clear();
                     }
                 } 
+                else if Self::EXCLUDE_WORDS.contains(&e.contents)
+                {
+                    if !group.is_empty() {
+                        rlist.push(
+                            TypeElem::WordElem(
+                                WordBranch{
+                                    contents: group.clone(),
+                                    depth: self.depth,
+                                    loopdepth: self.loopdepth
+                                }
+                            )
+                        );
+                        group.clear();
+                    }
+                    rlist.push(inner.clone());
+                }
                 else {
                     group.push(e.contents);
                 }
@@ -243,6 +265,7 @@ impl Parser<'_> for TypeParser
 
     fn resolve(&mut self) -> Result<(), ParserError> {
         self.code2vec()?;
+        // println!("in resovlve function {:?}", self.code_list);
         for i in &mut self.code_list {
             i.resolve_self()?;
         }

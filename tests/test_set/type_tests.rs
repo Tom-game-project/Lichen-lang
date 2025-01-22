@@ -20,3 +20,28 @@ pub fn type_test00(){
         println!("{:?}", t_parser.code_list);
     }
 }
+
+
+/// 型を正しくパースできているかをチェックします
+///
+#[test]
+pub fn type_test01(){
+    let test_cases:Vec<&str> = vec![
+        "(i32,i32,i32)"
+    ];
+
+    for test_case in test_cases {
+        let mut t_parser = TypeParser::new(
+            test_case.to_string(), 0, 0);
+
+        println!("test case ------- {}", test_case);
+        if let Err(e) = t_parser.resolve() {
+            println!("unexpected ParseError occured");
+            println!("{:?}", e);
+            panic!()
+        } else {
+            println!("{:?}", t_parser.code_list);
+        }
+    }
+}
+
