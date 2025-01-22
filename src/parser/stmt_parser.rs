@@ -569,7 +569,8 @@ fn stmt2type(i: &[StmtElem]) -> Result<Vec<TypeElem>, ParserError> {
     Ok(rlist)
 }
 
-fn split_semicolon_helper(rlist: &mut Vec<StmtElem>,group:&mut Vec<StmtElem>, depth:isize, loopdepth:isize) -> Result<(), ParserError>{
+fn split_semicolon_helper(rlist: &mut Vec<StmtElem>,group:&mut Vec<StmtElem>, depth:isize, loopdepth:isize) -> Result<(), ParserError>
+{
     if !group.is_empty() {
         if let StmtElem::WordElem(word_b) = &group[0] {
             if StmtParser::CONTROL_STATEMENT.contains(&word_b.contents.as_str()) {
@@ -578,23 +579,23 @@ fn split_semicolon_helper(rlist: &mut Vec<StmtElem>,group:&mut Vec<StmtElem>, de
                 rlist.push(StmtElem::Special(StmtBranch {
                     head: word_b.contents.clone(),
                     code_list: stmt2expr(&group[1..])?,
-                    depth: depth,
-                    loopdepth: loopdepth,
+                    depth,
+                    loopdepth,
                 }));
             } else {
                 // 普通の変数のwordだった場合
                 rlist.push(StmtElem::ExprElem(ExprBranch {
                     code_list: stmt2expr(&group)?,
-                    depth: depth,
-                    loopdepth: loopdepth,
+                    depth,
+                    loopdepth,
                 }));
             }
         } else {
             // 最初の要素がwordではなかった場合
             rlist.push(StmtElem::ExprElem(ExprBranch {
                 code_list: stmt2expr(&group)?,
-                depth: depth,
-                loopdepth: loopdepth,
+                depth,
+                loopdepth,
             }));
         }
     } else {
@@ -603,7 +604,6 @@ fn split_semicolon_helper(rlist: &mut Vec<StmtElem>,group:&mut Vec<StmtElem>, de
     group.clear();
     Ok(())
 }
-
 
 impl Parser<'_> for StmtParser {
     fn new(code: String, depth: isize, loopdepth: isize) -> Self {

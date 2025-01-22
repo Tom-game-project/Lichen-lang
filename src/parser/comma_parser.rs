@@ -3,6 +3,7 @@ use crate::abs::ast::ExprElem;
 
 use crate::abs::ast::ProcToken;
 use crate::abs::ast::Token;
+use crate::abs::ast::TypeElem;
 use crate::errors::parser_errors::ParserError;
 use crate::parser::core_parser::Parser;
 

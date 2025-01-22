@@ -68,6 +68,7 @@ impl RecursiveAnalysisElements for FuncBranch {
             // 演算子だった場合はpass
         } else if let ExprElem::ParenBlockElem(ParenBlockBranch {
             contents: v,
+            contents_as_type: _vt,
             depth,
             loopdepth,
         }) = first_elem

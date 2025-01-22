@@ -1,6 +1,8 @@
 use crate::abs::ast::*;
 use crate::errors::parser_errors::ParserError;
+use crate::parser::core_parser::Parser;
 use crate::parser::expr_parser::ExprParser;
+use crate::parser::type_parser::{expr2type, TypeParser};
 
 /// #ParenBlockBranch
 /// `()`を使用したプログラムにおけるデータを格納するstruct
@@ -10,6 +12,7 @@ use crate::parser::expr_parser::ExprParser;
 #[derive(Clone, Debug)]
 pub struct ParenBlockBranch {
     pub contents: Vec<ExprElem>,
+    pub contents_as_type: Vec<TypeElem>,
     pub depth: isize,
     pub loopdepth: isize,
 }
@@ -33,6 +36,37 @@ impl RecursiveAnalysisElements for ParenBlockBranch {
             }
             Err(e) => Err(e),
         }
+    }
+}
+
+impl RecursiveAnalysisTypeElements for ParenBlockBranch {
+    fn resolve_self_as_type(&mut self) -> Result<(), ParserError> {
+        // 型パーサによって解析
+        // parenのなかでカンマ区切りで、宣言されるかもしれない
+        // ```
+        // (i32)
+        // (i32, i32)
+        // (<type>, <type>, ...)
+        // (a: i32, b: i32) // ex
+        // ```
+        // exは
+        // ```
+        // (a: <type>, b: <type>)
+        // ```
+        // と解釈すれば解決できる
+        // その上で、ここには、カンマで木々って解釈しなければならない
+        let mut parser = TypeParser::create_parser_from_vec(
+            expr2type(&self.contents)?,
+            0, 0
+        );
+        parser.code2vec()?;
+        // ここで、カンマごとに区切るcode2vecとは別の関数を用意する
+        let mut rlist = parser.code_list;
+        for i in &mut rlist {
+            i.resolve_self()?; // 呼び出した先でresolve_self_as_typeが更に呼ばれる
+        }
+        self.contents_as_type = rlist;
+        Ok(())
     }
 }
 
@@ -60,8 +94,10 @@ impl ASTAreaBranch<ExprElem> for ParenBlockBranch {
     fn new(contents: Vec<ExprElem>, depth: isize, loopdepth: isize) -> Self {
         Self {
             contents,
+            contents_as_type: Vec::default(),
             depth,
             loopdepth,
         }
     }
 }
+

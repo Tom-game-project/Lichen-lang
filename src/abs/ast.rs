@@ -17,8 +17,10 @@ use crate::token::ttype::primitive::PrimitiveBranch;
 use crate::token::ttype::type_block::TypeBlockBranch;
 use crate::token::unknown::UnKnownBranch;
 use crate::token::word::WordBranch;
+use crate::token::type_item::TypeItemBranch;
 // errors
 use crate::errors::parser_errors::ParserError;
+
 
 pub trait Token {
     fn set_char_as_unknown(c: char) -> Self;
@@ -65,6 +67,7 @@ pub enum TypeElem {
     ParenBlockElem(ParenBlockBranch),
     ListBlockElem(ListBlockBranch),
     TypeBlockElem(TypeBlockBranch),
+    ItemBlockElem(TypeItemBranch),
     UnKnownElem(UnKnownBranch),
 }
 
@@ -168,6 +171,7 @@ impl ProcToken for ExprElem {
     fn t_parenblock(contents: Vec<ExprElem>, depth: isize, loopdepth: isize) -> Self {
         Self::ParenBlockElem(ParenBlockBranch {
             contents,
+            contents_as_type: Vec::default(),
             depth,
             loopdepth,
         })
@@ -202,6 +206,7 @@ impl Token for TypeElem {
             TypeElem::CommentElem(e) => e.get_show_as_string(),
             TypeElem::ListBlockElem(e) => e.get_show_as_string(),
             TypeElem::ParenBlockElem(e) => e.get_show_as_string(),
+            TypeElem::ItemBlockElem(e) => e.get_show_as_string(),
         }
     }
 
@@ -213,11 +218,19 @@ impl Token for TypeElem {
             TypeElem::CommentElem(e) => e.show(),
             TypeElem::ListBlockElem(e) => e.show(),
             TypeElem::ParenBlockElem(e) => e.show(),
+            TypeElem::ItemBlockElem(e) => e.show(),
         }
     }
 
     fn resolve_self(&mut self) -> Result<(), ParserError> {
-        todo!()
+        // resolve_self_as_typeというmethodを呼び出したい
+        match self {
+            TypeElem::ParenBlockElem(pb) => pb.resolve_self_as_type(),
+            _ => {
+                // 最終的にこのブロックはなくす
+                todo!()
+            }
+        }
     }
 }
 
@@ -299,6 +312,7 @@ impl ProcToken for StmtElem {
     fn t_parenblock(contents: Vec<ExprElem>, depth: isize, loopdepth: isize) -> Self {
         Self::ParenBlockElem(ParenBlockBranch {
             contents,
+            contents_as_type: Vec::default(),
             depth,
             loopdepth,
         })
@@ -343,6 +357,14 @@ pub trait TypeAreaBranch {
     fn new(contents: Vec<TypeElem>, depth: isize) -> Self;
 }
 
+
+/// 再帰的にパースを必要とするプログラム片に実装する
 pub trait RecursiveAnalysisElements {
     fn resolve_self(&mut self) -> Result<(), ParserError>;
+}
+
+
+/// 再帰的にパースを必要とする型宣言に実装する
+pub trait RecursiveAnalysisTypeElements {
+    fn resolve_self_as_type(&mut self) -> Result<(), ParserError>;
 }

@@ -23,3 +23,6 @@ pub mod word;
 pub mod ttype;
 // statement
 pub mod stmt;
+
+pub mod type_item;
+
