@@ -73,6 +73,12 @@ pub fn stmt_test00() {
             print(\"end\");
         }
         ",
+        "
+        let a:i32 = 42;
+        let b:i32 = 100;
+        let func00:(i32, i32) -> (f32, f32) -> i32 = f;
+        func00((a + b) / 2, 1);
+        "
     ];
 
     for test_case in test_cases {
@@ -220,8 +226,11 @@ pub fn stmt_test02() {
 #[test]
 pub fn stmt_test03() {
     let test_cases = ["
-        fn main(a:i32) -> i32 {
+        fn main(a:i32, b:i32) -> (i32, i32) -> i32 {
+            let a:i32 = 1;
+            let b:Vec[Vec[(i32, i32) -> i32]] = [[f]];
             print(\"hello world\");
+            return (3);
         }
         "];
 
