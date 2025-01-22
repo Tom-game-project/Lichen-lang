@@ -12,6 +12,7 @@ use crate::token::syntax_box::SyntaxBoxBranch;
 
 pub const LOOP_ADDR: &str = "#l";
 pub const BLOCK_ADDR: &str = "#b";
+// memoryにアクセスするための特別な配列の名前
 pub const MEMORY_SPACE_NAME: &str = "__mem";
 
 /// function branch
