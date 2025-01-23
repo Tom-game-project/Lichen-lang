@@ -99,6 +99,11 @@ cargo test --package lichen-lang --test lib -- test_set::stmt_tests::stmt_test03
 cargo test --package lichen-lang --test lib -- test_set::type_tests::type_test00 --exact --show-output
 ```
 
+### type test01
+```bash
+cargo test --package lichen-lang --test lib -- test_set::type_tests::type_test01 --exact --show-output
+```
+
 
 
 ### gen test00

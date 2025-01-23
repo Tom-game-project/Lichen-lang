@@ -76,6 +76,8 @@ pub fn stmt_test00() {
         "
         let a:i32 = 42;
         let b:i32 = 100;
+        let b:Vec(i32) = [1 , 2 , 3];
+        let b:Vec(Vec(i32)) = [[1]];
         let func00:(i32, i32) -> (f32, f32) -> i32 = f;
         func00((a + b) / 2, 1);
         "

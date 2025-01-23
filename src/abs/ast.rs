@@ -18,6 +18,7 @@ use crate::token::ttype::type_block::TypeBlockBranch;
 use crate::token::unknown::UnKnownBranch;
 use crate::token::word::WordBranch;
 use crate::token::type_item::TypeItemBranch;
+use crate::token::type_func::TypeFuncBranch;
 // errors
 use crate::errors::parser_errors::ParserError;
 
@@ -68,6 +69,7 @@ pub enum TypeElem {
     ListBlockElem(ListBlockBranch),
     TypeBlockElem(TypeBlockBranch),
     ItemBlockElem(TypeItemBranch),
+    TypeFuncElem(TypeFuncBranch),
     UnKnownElem(UnKnownBranch),
 }
 
@@ -202,6 +204,7 @@ impl Token for TypeElem {
         match self {
             TypeElem::WordElem(e) => e.get_show_as_string(),
             TypeElem::TypeBlockElem(e) => e.get_show_as_string(),
+            TypeElem::TypeFuncElem(e) => e.get_show_as_string(),
             TypeElem::UnKnownElem(e) => e.get_show_as_string(),
             TypeElem::CommentElem(e) => e.get_show_as_string(),
             TypeElem::ListBlockElem(e) => e.get_show_as_string(),
@@ -214,6 +217,7 @@ impl Token for TypeElem {
         match self {
             TypeElem::WordElem(e) => e.show(),
             TypeElem::TypeBlockElem(e) => e.show(),
+            TypeElem::TypeFuncElem(e) => e.show(),
             TypeElem::UnKnownElem(e) => e.show(),
             TypeElem::CommentElem(e) => e.show(),
             TypeElem::ListBlockElem(e) => e.show(),
@@ -228,6 +232,12 @@ impl Token for TypeElem {
             TypeElem::ParenBlockElem(pb) =>{
                 pb.resolve_self_as_type()
             },
+            TypeElem::TypeBlockElem(tb) =>{
+                todo!()
+            },
+            TypeElem::TypeFuncElem(tfb) => {
+                tfb.resolve_self_as_type()
+            },
             TypeElem::ItemBlockElem(ib) =>{
                 ib.resolve_self_as_type()
             },
@@ -235,6 +245,7 @@ impl Token for TypeElem {
             TypeElem::CommentElem(_cb) => Ok(()),
             _ => {
                 // 最終的にこのブロックはなくす
+                println!("{:?}", self);
                 todo!()
             }
         }

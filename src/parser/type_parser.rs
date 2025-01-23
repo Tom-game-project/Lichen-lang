@@ -2,6 +2,8 @@ use crate::parser::core_parser::*;
 use crate::errors::parser_errors::ParserError;
 
 use crate::abs::ast::*;
+use crate::token::func::FuncBranch;
+use crate::token::type_func::TypeFuncBranch;
 use crate::token::word::WordBranch;
 use crate::token::type_item::TypeItemBranch;
 
@@ -17,14 +19,13 @@ pub struct TypeParser {
 
 impl TypeParser {
     pub fn code2vec(&mut self) -> Result<(), ParserError> {
-        self.grouping_elements(TypeElem::TypeBlockElem,
-            Self::BLOCK_TYPE_OPEN,Self::BLOCK_TYPE_CLOSE)?;
         self.grouping_elements(
             TypeElem::ParenBlockElem,
             Self::BLOCK_PAREN_OPEN,
             Self::BLOCK_PAREN_CLOSE)?;
+
         self.grouping_words()?;
-        //println!("in code2vec function {:?}", self.code_list);
+        self.grouping_recursive_struct()?;
         Ok(())
     }
 
@@ -35,19 +36,17 @@ impl TypeParser {
         let mut rlist:Vec<TypeElem> = Vec::new();
         let mut group:Vec<TypeElem> = Vec::new();
 
-        // println!("self codelist {:?}",self.code_list);
         for inner in &self.code_list {
             if let TypeElem::UnKnownElem(ub) = inner {
                 if ub.contents == Self::COMMA
                 {
-                    // itemをrlistに追加
                     rlist.push(
                         TypeElem::ItemBlockElem(
                             TypeItemBranch {
                                 contents: group.clone(),
                                 depth:self.depth,
                                 loopdepth:self.loopdepth
-                            }
+                        }
                     ));
                     group.clear();
                 }
@@ -63,7 +62,6 @@ impl TypeParser {
         }
         if !group.is_empty()
         {
-            // itemをrlistに追加
             rlist.push(
                 TypeElem::ItemBlockElem(
                     TypeItemBranch {
@@ -170,7 +168,7 @@ impl TypeParser {
                         );
                         group.clear();
                     }
-                    rlist.push(inner.clone());
+                    rlist.push(inner.clone()); // ここで、カンマや区切り文字も追加する必要がある
                 }
                 else {
                     group.push(e.contents);
@@ -207,6 +205,52 @@ impl TypeParser {
         Ok(())
     }
 
+    /// 再帰的な型の表現をパースする
+    ///
+    /// `Vec(i32)`
+    fn grouping_recursive_struct(&mut self)-> Result<(), ParserError> {
+        let mut rlist: Vec<TypeElem> = Vec::new();
+        let mut word:Option<WordBranch> = None;
+
+        for inner in &self.code_list{
+            match inner {
+                TypeElem::WordElem(wb) => {
+                    if word.is_some() {
+                        return Err(ParserError::InvalidTypeSyntax);
+                    }
+                    word = Some(wb.clone());
+                }
+                TypeElem::ParenBlockElem(pb) => {
+                    //
+                    if let Some(wb) = word {
+                        rlist.push(TypeElem::TypeFuncElem(TypeFuncBranch{
+                            name:wb.contents,
+                            contents:pb.contents_as_type.clone(),
+                            depth:self.depth,
+                            loopdepth:self.loopdepth
+                        }));
+                        word = None;
+                    }
+                    else
+                    {
+                        rlist.push(inner.clone());
+                    }
+                }
+                _=> {
+                    if let Some(wb) = &word {
+                        rlist.push(TypeElem::WordElem(wb.clone()));
+                        word = None;
+                    }
+                    rlist.push(inner.clone());
+                }
+            }
+        }
+        if let Some(wb) = &word {
+            rlist.push(TypeElem::WordElem(wb.clone()));
+        }
+        self.code_list = rlist;
+        Ok(())
+    }
 
     /// ExprElemの途中までパースされた集合をtype用に変換する
     pub fn create_parser_from_vec(
@@ -265,7 +309,6 @@ impl Parser<'_> for TypeParser
 
     fn resolve(&mut self) -> Result<(), ParserError> {
         self.code2vec()?;
-        // println!("in resovlve function {:?}", self.code_list);
         for i in &mut self.code_list {
             i.resolve_self()?;
         }

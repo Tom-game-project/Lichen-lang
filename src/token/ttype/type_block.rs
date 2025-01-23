@@ -38,7 +38,14 @@ impl TypeAreaBranch for TypeBlockBranch {
 impl RecursiveAnalysisElements for TypeBlockBranch {
     fn resolve_self(&mut self) -> Result<(), ParserError> {
         // TODO!
+        Ok(())
+    }
+}
 
+
+impl RecursiveAnalysisTypeElements for TypeBlockBranch {
+    fn resolve_self_as_type(&mut self) -> Result<(), ParserError> {
+        // TODO
         Ok(())
     }
 }

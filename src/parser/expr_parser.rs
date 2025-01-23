@@ -648,6 +648,7 @@ impl ExprParser {
     fn find_min_priority_index(&self) -> Result<Option<usize>, ParserError> {
         let mut priority_tmp: i32 = i32::MAX;
         let mut index_tmp = None;
+
         for (index, inner) in self.code_list.iter().enumerate() {
             if let ExprElem::OpeElem(ope) = inner {
                 let ope_contents = &ope.ope;

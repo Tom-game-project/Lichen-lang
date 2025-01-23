@@ -27,7 +27,11 @@ pub fn type_test00(){
 #[test]
 pub fn type_test01(){
     let test_cases:Vec<&str> = vec![
-        "(i32,i32,i32)"
+        "(i32)",
+        "(i32, i32)",
+        "(i32,i32,i32)",
+        "(Vec(i32), i32, i32)",
+        "Vec(i32)",
     ];
 
     for test_case in test_cases {
