@@ -56,7 +56,7 @@ pub enum OpeTable {
 impl OpeTable {
     pub fn set(s: &str) -> Result<Self, &str> {
         match s {
-            "->" => Ok(Self::OR),
+            "->" => Ok(Self::ARROW),
             "||" => Ok(Self::OR),
             "&&" => Ok(Self::AND),
             "==" => Ok(Self::EQ),

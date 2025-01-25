@@ -2,13 +2,14 @@ use crate::parser::core_parser::*;
 use crate::errors::parser_errors::ParserError;
 
 use crate::abs::ast::*;
-use crate::token::func::FuncBranch;
 use crate::token::type_func::TypeFuncBranch;
+use crate::token::unknown::UnKnownBranch;
 use crate::token::word::WordBranch;
 use crate::token::type_item::TypeItemBranch;
+use crate::token::type_ope::TypeOpeBranch;
 
 /// まとめられるケース
-/// `i32`, `i64`, `f32`, `f64`, `+<+>`
+/// `i32`, `i64`, `f32`, `f64`, `+(+)`
 
 pub struct TypeParser {
     pub code: String,
@@ -22,8 +23,9 @@ impl TypeParser {
         self.grouping_elements(
             TypeElem::ParenBlockElem,
             Self::BLOCK_PAREN_OPEN,
-            Self::BLOCK_PAREN_CLOSE)?;
-
+            Self::BLOCK_PAREN_CLOSE
+        )?;
+        self.grouping_array()?; // "->" をまとめる
         self.grouping_words()?;
         self.grouping_recursive_struct()?;
         Ok(())
@@ -212,6 +214,7 @@ impl TypeParser {
         let mut rlist: Vec<TypeElem> = Vec::new();
         let mut word:Option<WordBranch> = None;
 
+        //println!("hello world in grouping_recursive_struct{:?}", self.code_list);
         for inner in &self.code_list{
             match inner {
                 TypeElem::WordElem(wb) => {
@@ -247,6 +250,73 @@ impl TypeParser {
         }
         if let Some(wb) = &word {
             rlist.push(TypeElem::WordElem(wb.clone()));
+        }
+        self.code_list = rlist;
+        Ok(())
+    }
+
+    /// typeのときに考慮されるのは、`->`演算子のみ
+    /// 実際にこの演算子は、magmaと見たほうが都合が良いだけである
+    fn grouping_array(&mut self) -> Result<(), ParserError>{
+        let mut rlist: Vec<TypeElem> = Vec::new();
+        let mut group: String = String::default();
+
+        for inner in &self.code_list{
+            match inner{
+                TypeElem::UnKnownElem(ub) => {
+                    // groupに追加する
+                    group.push(ub.contents);
+                    if Self::ARROW.opestr == &group {
+                        // groupをarrowとしてrlistに追加
+                        rlist.push(
+                            TypeElem::TypeOpeElem(
+                                TypeOpeBranch { 
+                                    name: group.clone(), 
+                                    depth: self.depth,
+                                    loopdepth: self.loopdepth
+                                }
+                            )
+                        );
+                        // groupをclear
+                        group.clear();
+                    } else if Self::ARROW.opestr.len() < group.len(){
+                        // groupが`->`の文字列の長さを超えていたら
+                        // groupのすべての内容を、rlistにunknownとして追加
+                        for i in group.chars() {
+                            rlist.push(
+                                TypeElem::UnKnownElem(UnKnownBranch{
+                                    contents: i,
+                                }));
+                        }
+                        group.clear();
+                    } else {
+                        // pass
+                    }
+                }
+                _ => {
+                    if Self::ARROW.opestr == &group {
+                        // groupをarrowとしてrlistに追加
+                        rlist.push(
+                            TypeElem::TypeOpeElem(
+                                TypeOpeBranch { 
+                                    name: group.clone(), 
+                                    depth: self.depth, 
+                                    loopdepth: self.loopdepth 
+                                }
+                            )
+                        );
+                        // groupをclear
+                        group.clear();
+                    }
+                    rlist.push(inner.clone());
+                }
+            }
+        }
+        for i in group.chars() {
+            rlist.push(
+                TypeElem::UnKnownElem(UnKnownBranch{
+                    contents: i,
+                }));
         }
         self.code_list = rlist;
         Ok(())

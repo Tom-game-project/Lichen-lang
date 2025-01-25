@@ -27,14 +27,10 @@ impl ASTBranch for TypeFuncBranch {
 
 impl RecursiveAnalysisTypeElements for TypeFuncBranch {
     fn resolve_self_as_type(&mut self) -> Result<(), ParserError> {
-        //for i in &mut self.contents{
-        //    i.resolve_self()?;
-        //}
-        //Ok(())
-
         let mut parser = 
             TypeParser::create_parser_from_vec(self.contents.clone(), 0, 0);
         parser.code2vec()?;
+        parser.comma_parser()?;
         let mut rlist = parser.code_list;
         for i in &mut rlist{
             i.resolve_self()?;

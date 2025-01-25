@@ -19,6 +19,7 @@ use crate::token::unknown::UnKnownBranch;
 use crate::token::word::WordBranch;
 use crate::token::type_item::TypeItemBranch;
 use crate::token::type_func::TypeFuncBranch;
+use crate::token::type_ope::TypeOpeBranch;
 // errors
 use crate::errors::parser_errors::ParserError;
 
@@ -70,6 +71,7 @@ pub enum TypeElem {
     TypeBlockElem(TypeBlockBranch),
     ItemBlockElem(TypeItemBranch),
     TypeFuncElem(TypeFuncBranch),
+    TypeOpeElem(TypeOpeBranch),
     UnKnownElem(UnKnownBranch),
 }
 
@@ -210,6 +212,7 @@ impl Token for TypeElem {
             TypeElem::ListBlockElem(e) => e.get_show_as_string(),
             TypeElem::ParenBlockElem(e) => e.get_show_as_string(),
             TypeElem::ItemBlockElem(e) => e.get_show_as_string(),
+            TypeElem::TypeOpeElem(e) => e.get_show_as_string(),
         }
     }
 
@@ -223,6 +226,7 @@ impl Token for TypeElem {
             TypeElem::ListBlockElem(e) => e.show(),
             TypeElem::ParenBlockElem(e) => e.show(),
             TypeElem::ItemBlockElem(e) => e.show(),
+            TypeElem::TypeOpeElem(e) => e.show(),
         }
     }
 
@@ -242,6 +246,7 @@ impl Token for TypeElem {
                 ib.resolve_self_as_type()
             },
             TypeElem::WordElem(_wb) => Ok(()),
+            TypeElem::TypeOpeElem(_ob) => Ok(()),
             TypeElem::CommentElem(_cb) => Ok(()),
             _ => {
                 // 最終的にこのブロックはなくす

@@ -62,7 +62,7 @@ cargo test --package lichen-lang --test lib -- test_set::expr_tests::expr_test04
 
 expr_parserが正常に動作するかを確かめるテスト00
 ```bash
-cargo test --package lichen-lang --test lib -- tests::unit_test00 --exact --show-output
+cargo test --package lichen-lang --test lib -- test_set::expr_tests::unit_test00 --exact --show-output
 ```
 
 ### unit test01
@@ -71,7 +71,7 @@ expr_parserが正常に動作するかを確かめるテスト01
 ここでは、`callable` `subscriptable`なコードが正常な動作をするかどうかのテストをします
 
 ```bash
-cargo test --package lichen-lang --test lib -- tests::unit_test01 --exact --show-output
+cargo test --package lichen-lang --test lib -- test_set::expr_tests::unit_test01 --exact --show-output
 ```
 
 ### stmt test00

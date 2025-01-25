@@ -27,11 +27,17 @@ pub fn type_test00(){
 #[test]
 pub fn type_test01(){
     let test_cases:Vec<&str> = vec![
+        "i32",
+        "bool",
+        "Vec(i32)",
+        "Option(i32, f32)",
         "(i32)",
         "(i32, i32)",
         "(i32,i32,i32)",
         "(Vec(i32), i32, i32)",
         "Vec(i32)",
+        "(i32)->bool",
+        //"(a:i32, b:i32)",
     ];
 
     for test_case in test_cases {

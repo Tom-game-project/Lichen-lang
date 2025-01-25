@@ -180,6 +180,8 @@ fn unit_test01() {
         "tarai(1)(2)(3)",
         "tarai(1)[2](3)",
         "tarai[1](2)[3]",
+        "x*x*2 + y*y*2",
+        "x**x**2 + y**y**2",
     ];
     for code in test_cases {
         let string_code: String = String::from(code);
