@@ -14,11 +14,11 @@ use crate::token::string::StringBranch;
 use crate::token::syntax::SyntaxBranch;
 use crate::token::syntax_box::SyntaxBoxBranch;
 use crate::token::ttype::primitive::PrimitiveBranch;
-use crate::token::ttype::type_block::TypeBlockBranch;
+// use crate::token::ttype::type_block::TypeBlockBranch;
 use crate::token::unknown::UnKnownBranch;
 use crate::token::word::WordBranch;
 use crate::token::type_item::TypeItemBranch;
-use crate::token::type_func::TypeFuncBranch;
+use crate::token::type_func::TypeBlockBranch;
 use crate::token::type_ope::TypeOpeBranch;
 // errors
 use crate::errors::parser_errors::ParserError;
@@ -70,7 +70,7 @@ pub enum TypeElem {
     ListBlockElem(ListBlockBranch),
     TypeBlockElem(TypeBlockBranch),
     ItemBlockElem(TypeItemBranch),
-    TypeFuncElem(TypeFuncBranch),
+    TypeFuncElem(TypeBlockBranch),
     TypeOpeElem(TypeOpeBranch),
     UnKnownElem(UnKnownBranch),
 }

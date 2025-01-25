@@ -2,7 +2,7 @@ use crate::parser::core_parser::*;
 use crate::errors::parser_errors::ParserError;
 
 use crate::abs::ast::*;
-use crate::token::type_func::TypeFuncBranch;
+use crate::token::type_func::TypeBlockBranch;
 use crate::token::unknown::UnKnownBranch;
 use crate::token::word::WordBranch;
 use crate::token::type_item::TypeItemBranch;
@@ -226,7 +226,7 @@ impl TypeParser {
                 TypeElem::ParenBlockElem(pb) => {
                     //
                     if let Some(wb) = word {
-                        rlist.push(TypeElem::TypeFuncElem(TypeFuncBranch{
+                        rlist.push(TypeElem::TypeFuncElem(TypeBlockBranch{
                             name:wb.contents,
                             contents:pb.contents_as_type.clone(),
                             depth:self.depth,

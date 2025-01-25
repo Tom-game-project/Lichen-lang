@@ -4,14 +4,14 @@ use crate::parser::type_parser::TypeParser;
 use crate::errors::parser_errors::ParserError;
 
 #[derive(Clone, Debug)]
-pub struct TypeFuncBranch {
+pub struct TypeBlockBranch {
     pub name: String,
     pub contents: Vec<TypeElem>,
     pub depth:isize,
     pub loopdepth:isize,
 }
 
-impl ASTBranch for TypeFuncBranch {
+impl ASTBranch for TypeBlockBranch {
     fn show(&self) {
         println!("{}", self.get_show_as_string());
     }
@@ -25,7 +25,7 @@ impl ASTBranch for TypeFuncBranch {
     }
 }
 
-impl RecursiveAnalysisTypeElements for TypeFuncBranch {
+impl RecursiveAnalysisTypeElements for TypeBlockBranch {
     fn resolve_self_as_type(&mut self) -> Result<(), ParserError> {
         let mut parser = 
             TypeParser::create_parser_from_vec(self.contents.clone(), 0, 0);
