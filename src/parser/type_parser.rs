@@ -2,7 +2,7 @@ use crate::parser::core_parser::*;
 use crate::errors::parser_errors::ParserError;
 
 use crate::abs::ast::*;
-use crate::token::type_func::TypeBlockBranch;
+use crate::token::type_block::TypeBlockBranch;
 use crate::token::unknown::UnKnownBranch;
 use crate::token::word::WordBranch;
 use crate::token::type_item::TypeItemBranch;
@@ -25,6 +25,7 @@ impl TypeParser {
             Self::BLOCK_PAREN_OPEN,
             Self::BLOCK_PAREN_CLOSE
         )?;
+
         self.grouping_array()?; // "->" をまとめる
         self.grouping_words()?;
         self.grouping_recursive_struct()?;
@@ -318,6 +319,29 @@ impl TypeParser {
                     contents: i,
                 }));
         }
+        self.code_list = rlist;
+        Ok(())
+    }
+
+    /// `->`を探します
+    fn find_arrow_index(&self) -> Option<usize>
+    {
+        for (i, inner) in self.code_list.iter().enumerate(){
+            if let TypeElem::TypeOpeElem(tb) = inner{
+                if tb.name == Self::ARROW.opestr{
+                    return Some(i);
+                }
+            }
+        }
+        None
+    }
+
+    /// `->` 演算子を解決します
+    ///
+    fn resolve_arrow(&mut self) -> Result<(), ParserError>
+    {
+        let mut rlist: Vec<TypeElem> = Vec::new();
+        
         self.code_list = rlist;
         Ok(())
     }
