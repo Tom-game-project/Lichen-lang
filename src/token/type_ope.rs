@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use crate::abs::ast::*;
 use crate::parser::type_parser::TypeParser;
 use crate::errors::parser_errors::ParserError;

@@ -26,5 +26,6 @@ pub mod stmt;
 
 pub mod type_item;
 pub mod type_block;
+pub mod type_func;
 pub mod type_ope;
 

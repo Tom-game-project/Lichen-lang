@@ -3,6 +3,7 @@ use crate::errors::parser_errors::ParserError;
 
 use crate::abs::ast::*;
 use crate::token::type_block::TypeBlockBranch;
+use crate::token::type_func::TypeArrowBranch;
 use crate::token::unknown::UnKnownBranch;
 use crate::token::word::WordBranch;
 use crate::token::type_item::TypeItemBranch;
@@ -26,9 +27,11 @@ impl TypeParser {
             Self::BLOCK_PAREN_CLOSE
         )?;
 
-        self.grouping_array()?; // "->" をまとめる
+        self.grouping_arrow()?; // "->" をまとめる
         self.grouping_words()?;
+        //println!("{:?}", self.code_list);
         self.grouping_recursive_struct()?;
+        self.resolve_arrow()?;
         Ok(())
     }
 
@@ -220,6 +223,7 @@ impl TypeParser {
             match inner {
                 TypeElem::WordElem(wb) => {
                     if word.is_some() {
+                        println!("{:?}", word);
                         return Err(ParserError::InvalidTypeSyntax);
                     }
                     word = Some(wb.clone());
@@ -258,7 +262,7 @@ impl TypeParser {
 
     /// typeのときに考慮されるのは、`->`演算子のみ
     /// 実際にこの演算子は、magmaと見たほうが都合が良いだけである
-    fn grouping_array(&mut self) -> Result<(), ParserError>{
+    fn grouping_arrow(&mut self) -> Result<(), ParserError>{
         let mut rlist: Vec<TypeElem> = Vec::new();
         let mut group: String = String::default();
 
@@ -266,7 +270,10 @@ impl TypeParser {
             match inner{
                 TypeElem::UnKnownElem(ub) => {
                     // groupに追加する
-                    group.push(ub.contents);
+                    if !Self::SPLIT_CHAR.contains(&ub.contents)
+                    {
+                        group.push(ub.contents);
+                    } // もし区切り文字だったら、groupに追加しない
                     if Self::ARROW.opestr == &group {
                         // groupをarrowとしてrlistに追加
                         rlist.push(
@@ -323,9 +330,10 @@ impl TypeParser {
         Ok(())
     }
 
-    /// `->`を探します
+    /// `->`を探し最後に見つかったindexを返却する。
     fn find_arrow_index(&self) -> Option<usize>
     {
+//        let mut tmp: Option<usize> = None;
         for (i, inner) in self.code_list.iter().enumerate(){
             if let TypeElem::TypeOpeElem(tb) = inner{
                 if tb.name == Self::ARROW.opestr{
@@ -337,12 +345,38 @@ impl TypeParser {
     }
 
     /// `->` 演算子を解決します
+    /// 
+    /// `A -> B`
+    /// ...
     ///
+    /// TypeArrowBranch
+    /// {
+    ///     l : Box<Item(lexpr)>
+    ///     r : Box<Item(rexpr)>
+    /// }
     fn resolve_arrow(&mut self) -> Result<(), ParserError>
     {
-        let mut rlist: Vec<TypeElem> = Vec::new();
-        
-        self.code_list = rlist;
+        let mut rlist:Vec<TypeElem> = Vec::new();
+
+        if let Some(index) = self.find_arrow_index(){
+            let l = self.code_list[..index].to_vec();
+            let r = self.code_list[index + 1..].to_vec();
+            rlist.push(TypeElem::TypeArrowElem(TypeArrowBranch{
+                rtype: Box::new(TypeElem::ItemBlockElem(TypeItemBranch{
+                contents: r,
+                depth: self.depth,
+                loopdepth: self.loopdepth
+            })),
+                ltype: Box::new(TypeElem::ItemBlockElem(TypeItemBranch{
+                contents: l,
+                depth: self.depth,
+                loopdepth: self.loopdepth
+            })),
+                depth:self.depth,
+                loopdepth: self.loopdepth
+            }));
+            self.code_list = rlist;
+        }
         Ok(())
     }
 

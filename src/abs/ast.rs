@@ -19,6 +19,8 @@ use crate::token::word::WordBranch;
 use crate::token::type_item::TypeItemBranch;
 use crate::token::type_block::TypeBlockBranch;
 use crate::token::type_ope::TypeOpeBranch;
+use crate::token::type_func::TypeArrowBranch;
+
 // errors
 use crate::errors::parser_errors::ParserError;
 
@@ -71,6 +73,7 @@ pub enum TypeElem {
     ItemBlockElem(TypeItemBranch),
     TypeFuncElem(TypeBlockBranch),
     TypeOpeElem(TypeOpeBranch),
+    TypeArrowElem(TypeArrowBranch),
     UnKnownElem(UnKnownBranch),
 }
 
@@ -212,6 +215,7 @@ impl Token for TypeElem {
             TypeElem::ParenBlockElem(e) => e.get_show_as_string(),
             TypeElem::ItemBlockElem(e) => e.get_show_as_string(),
             TypeElem::TypeOpeElem(e) => e.get_show_as_string(),
+            TypeElem::TypeArrowElem(e) => e.get_show_as_string(),
         }
     }
 
@@ -226,6 +230,7 @@ impl Token for TypeElem {
             TypeElem::ParenBlockElem(e) => e.show(),
             TypeElem::ItemBlockElem(e) => e.show(),
             TypeElem::TypeOpeElem(e) => e.show(),
+            TypeElem::TypeArrowElem(e) => e.show(),
         }
     }
 
@@ -241,8 +246,11 @@ impl Token for TypeElem {
             TypeElem::TypeFuncElem(tfb) => {
                 tfb.resolve_self_as_type()
             },
-            TypeElem::ItemBlockElem(ib) =>{
+            TypeElem::ItemBlockElem(ib) => {
                 ib.resolve_self_as_type()
+            },
+            TypeElem::TypeArrowElem(tab) => {
+                tab.resolve_self_as_type()
             },
             TypeElem::WordElem(_wb) => Ok(()),
             TypeElem::TypeOpeElem(_ob) => Ok(()),
